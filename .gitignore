@@ -1,0 +1,23 @@
+# KAVACH AI — Root Gitignore
+
+# Backend specifics
+backend/venv/
+backend/.env
+backend/*.db
+backend/__pycache__/
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/logs/*
+!backend/logs/.gitkeep
+
+# Python specifics
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Operating system / development editors
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
