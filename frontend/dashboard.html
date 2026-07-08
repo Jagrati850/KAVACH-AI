@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KAVACH AI — Control Center &amp; Threat Intelligence Dashboard</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Iconify -->
+  <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js" crossorigin="anonymous"></script>
+
+  <!-- Leaflet CSS for Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body class="dashboard-body">
+
+  <div class="dashboard-container">
+    <!-- ── SIDEBAR ────────────────────────────────────────────── -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-brand">KAVACH AI</span>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" onclick="switchTab('overview')">
+          <iconify-icon icon="mdi:view-dashboard"></iconify-icon>
+          <span>Overview</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('scan-center')">
+          <iconify-icon icon="mdi:shield-search"></iconify-icon>
+          <span>Scan Center</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('rag-advisory')">
+          <iconify-icon icon="mdi:book-search"></iconify-icon>
+          <span>RAG Advisory</span>
+        </button>
+        <button class="nav-item LEO-only ADMIN-only" onclick="switchTab('analytics')">
+          <iconify-icon icon="mdi:chart-scatter-plot-hexbin"></iconify-icon>
+          <span>Intel &amp; Analytics</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('reports')">
+          <iconify-icon icon="mdi:file-document-multiple"></iconify-icon>
+          <span id="casesNavText">Reports</span>
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <div class="user-avatar" id="avatarLetter">U</div>
+          <div class="user-info">
+            <div class="user-name" id="profileName">Loading User</div>
+            <div class="user-role mono" id="profileRole">CITIZEN</div>
+          </div>
+        </div>
+        <button class="logout-btn" onclick="handleLogout()">
+          <iconify-icon icon="mdi:logout"></iconify-icon>
+          <span>Sign Out</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ── MAIN CONTENT AREA ──────────────────────────────────── -->
+    <main class="main-content">
+      <header class="dashboard-header">
+        <div>
+          <h1 class="page-title" id="pageTitle">Control Center</h1>
+          <p class="page-subtitle" id="pageSubtitle">Real-time digital threat mitigation overview</p>
+        </div>
+        <div class="header-actions">
+          <span class="api-status-badge">
+            <span class="status-indicator online"></span>
+            <span>API Online</span>
+          </span>
+        </div>
+      </header>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           VIEW: OVERVIEW
+           ═══════════════════════════════════════════════════════════ -->
+      <div id="view-overview" class="dashboard-view active">
+        <div class="dashboard-grid">
+          <!-- Widget: Welcome Message -->
+          <div class="dashboard-card welcome-card col-span-2">
+            <h2>Welcome to KAVACH AI Command Platform</h2>
+            <p>Access active scanning tools, cross-reference blacklists, check deepfake patterns, or consult the RAG advisories system to safeguard your digital presence.</p>
+            <div class="welcome-buttons">
+              <button class="btn-primary" onclick="switchTab('scan-center')">
+                Launch Shield <span class="arrow">→</span>
+              </button>
+              <button class="btn-outline" onclick="switchTab('rag-advisory')">
+                Consult Advisories
+              </button>
+            </div>
+          </div>
+
+          <!-- Widget: Live Threat Alert -->
+          <div class="dashboard-card bg-alert-glow">
+            <div class="card-header">
+              <h3>Live Threat Intelligence</h3>
+              <iconify-icon icon="mdi:alert-decagram" class="text-orange"></iconify-icon>
+            </div>
+            <div class="threat-intel-box" id="threatIntelOverview">
+              <div class="loading-spinner"></div>
+            </div>
+          </div>
+
+          <!-- Stats Line -->
+          <div class="dashboard-card text-center">
+            <span class="stat-value" id="statScans">0</span>
+            <span class="stat-label">Total Custom Scans Completed</span>
+          </div>
+          <div class="dashboard-card text-center">
+            <span class="stat-value" id="statReports">0</span>
+            <span class="stat-label">Verified Reports Submitted</span>
+          </div>
+          <div class="dashboard-card text-center">
+            <span class="stat-value" id="statRisk">Safe</span>
+            <span class="stat-label">Latest Threat Risk Level</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           VIEW: SCAN CENTER
+           ═══════════════════════════════════════════════════════════ -->
+      <div id="view-scan-center" class="dashboard-view">
+        <div class="tab-container">
+          <div class="tab-headers">
+            <button class="tab-header active" onclick="switchScanTab('scam-text')">Scam Detector</button>
+            <button class="tab-header" onclick="switchScanTab('scam-call')">Call Transcripts</button>
+            <button class="tab-header" onclick="switchScanTab('blacklist')">Entity Checker</button>
+            <button class="tab-header" onclick="switchScanTab('forensics')">Media Forensics</button>
+          </div>
+
+          <!-- Tab: Scam Detector -->
+          <div id="scantab-scam-text" class="tab-content active">
+            <div class="scan-grid">
+              <div class="scan-inputs">
+                <h3>Text Message &amp; Email Parser</h3>
+                <p class="input-desc">Paste SMS alerts, WhatsApp lottery invitations, emails, or urgent notification texts to scan for patterns of financial fraud or phishing.</p>
+                <form id="textScanForm" onsubmit="runTextScan(event)">
+                  <div class="form-group">
+                    <label class="form-label">Message Content</label>
+                    <textarea class="form-textarea font-mono" id="textScanContent" placeholder="Enter suspicious message text here..." required></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Context Category</label>
+                    <select class="form-select" id="textScanContext">
+                      <option value="sms">SMS / Mobile SMS alert</option>
+                      <option value="whatsapp">WhatsApp Text Message</option>
+                      <option value="email">Phishing Email Body</option>
+                      <option value="other">Other platform / Website copy</option>
+                    </select>
+                  </div>
+                  <button type="submit" class="btn-primary w-full" id="btnTextScan">
+                    Perform Verification Scan <span class="arrow">→</span>
+                  </button>
+                </form>
+              </div>
+
+              <!-- Output Panel -->
+              <div class="scan-outputs" id="textScanOutput">
+                <div class="output-placeholder">
+                  <iconify-icon icon="mdi:shield-search"></iconify-icon>
+                  <p>Submit text content to display real-time AI security scans.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Call Transcripts -->
+          <div id="scantab-scam-call" class="tab-content">
+            <div class="scan-grid">
+              <div class="scan-inputs">
+                <h3>Call Dialog / Transcript Checker</h3>
+                <p class="input-desc">Paste dialogue logs or speech transcripts from incoming calls (e.g., alleged tax officials, courier claims, or law enforcement demands) to analyze for coercion patterns.</p>
+                <form id="callScanForm" onsubmit="runCallScan(event)">
+                  <div class="form-group">
+                    <label class="form-label">Call Dialogue Transcript</label>
+                    <textarea class="form-textarea font-mono" id="callScanContent" placeholder="Speak or paste voice transcript details..." required></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Transcript Language</label>
+                    <select class="form-select" id="callScanLanguage">
+                      <option value="en">English (default)</option>
+                      <option value="hi">Hindi / Hinglish</option>
+                    </select>
+                  </div>
+                  <button type="submit" class="btn-primary w-full" id="btnCallScan">
+                    Analyze Coercion Patterns <span class="arrow">→</span>
+                  </button>
+                </form>
+              </div>
+
+              <div class="scan-outputs" id="callScanOutput">
+                <div class="output-placeholder">
+                  <iconify-icon icon="mdi:microphone"></iconify-icon>
+                  <p>Submit phone transcript dialog logs to run suspect analysis.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Blacklist checker -->
+          <div id="scantab-blacklist" class="tab-content">
+            <div class="scan-grid">
+              <div class="scan-inputs">
+                <h3>Universal Registry Checker</h3>
+                <p class="input-desc">Query bank account numbers, UPI IDs, telephone numbers, or domains against compiled registries of flagged mules and malicious origins.</p>
+                <form id="blacklistScanForm" onsubmit="runBlacklistScan(event)">
+                  <div class="form-group">
+                    <label class="form-label">Target Account, UPI, Phone, or URL</label>
+                    <input type="text" class="form-input font-mono" id="blacklistQuery" placeholder="e.g., electricity-power-delhi.com, or upi@paytm" required />
+                  </div>
+                  <button type="submit" class="btn-primary w-full" id="btnBlacklistScan">
+                    Search Registry Databases <span class="arrow">→</span>
+                  </button>
+                </form>
+              </div>
+
+              <div class="scan-outputs" id="blacklistScanOutput">
+                <div class="output-placeholder">
+                  <iconify-icon icon="mdi:database-search"></iconify-icon>
+                  <p>Execute queries targeting threat database registries.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Forensics uploads -->
+          <div id="scantab-forensics" class="tab-content">
+            <div class="forensics-subtabs">
+              <button class="subtab-header active" onclick="switchForensicsTab('deepfake-image')">Face Manipulation</button>
+              <button class="subtab-header" onclick="switchForensicsTab('deepfake-voice')">Voice Cloning</button>
+              <button class="subtab-header" onclick="switchForensicsTab('currency-verify')">Currency Verification</button>
+            </div>
+
+            <!-- Image deepfake -->
+            <div id="forensictab-deepfake-image" class="forensic-content active">
+              <div class="scan-grid">
+                <div class="scan-inputs">
+                  <h3>Image Metadata &amp; Pixel Manipulation Integrity</h3>
+                  <p class="input-desc">Provide profile photos, screenshot images, or files to check for AI face manipulation, jpeg re-compression artifacts, and inconsistent noise spectra.</p>
+                  <form id="imgForensicForm" onsubmit="runImageForensic(event)">
+                    <div class="form-group">
+                      <label class="form-label">Select Evidence Image File (<10MB)</label>
+                      <input type="file" class="form-input" id="imgForensicFile" accept="image/*" required />
+                    </div>
+                    <button type="submit" class="btn-primary w-full" id="btnImgForensic">
+                      Analyze Image Pixels <span class="arrow">→</span>
+                    </button>
+                  </form>
+                </div>
+                <div class="scan-outputs" id="imgForensicOutput">
+                  <div class="output-placeholder">
+                    <iconify-icon icon="mdi:image-search"></iconify-icon>
+                    <p>Select image media files to execute manipulation scans.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Voice deepfake -->
+            <div id="forensictab-deepfake-voice" class="forensic-content">
+              <div class="scan-grid">
+                <div class="scan-inputs">
+                  <h3>Text-to-Speech &amp; Voice Clone Analyzer</h3>
+                  <p class="input-desc">Analyze voice clips, WhatsApp sounds, or suspicious recording calls for high pitch stability indices and cloned text-to-speech signatures.</p>
+                  <form id="audioForensicForm" onsubmit="runAudioForensic(event)">
+                    <div class="form-group">
+                      <label class="form-label">Select Evidence Audio File (<15MB)</label>
+                      <input type="file" class="form-input" id="audioForensicFile" accept="audio/*" required />
+                    </div>
+                    <button type="submit" class="btn-primary w-full" id="btnAudioForensic">
+                      Assess Vocal Stability <span class="arrow">→</span>
+                    </button>
+                  </form>
+                </div>
+                <div class="scan-outputs" id="audioForensicOutput">
+                  <div class="output-placeholder">
+                    <iconify-icon icon="mdi:waveform"></iconify-icon>
+                    <p>Select sound recordings to perform forensic verification audits.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Currency Verify -->
+            <div id="forensictab-currency-verify" class="forensic-content">
+              <div class="scan-grid">
+                <div class="scan-inputs">
+                  <h3>Indian Banknote Verification Scanner</h3>
+                  <p class="input-desc">Submit banknote pictures to verify alignment of watermarks, color shifts of thread threads, and micro-letter markings relative to denomination guidelines.</p>
+                  <form id="currencyVerifyForm" onsubmit="runCurrencyVerify(event)">
+                    <div class="form-group">
+                      <label class="form-label">Select Banknote Image File</label>
+                      <input type="file" class="form-input" id="currencyVerifyFile" accept="image/*" required />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Note Denomination</label>
+                      <select class="form-select" id="currencyVerifyValue">
+                        <option value="500">₹500 Note</option>
+                        <option value="200">₹200 Note</option>
+                        <option value="100">₹100 Note</option>
+                        <option value="50">₹50 Note</option>
+                        <option value="20">₹20 Note</option>
+                        <option value="10">₹10 Note</option>
+                      </select>
+                    </div>
+                    <button type="submit" class="btn-primary w-full" id="btnCurrencyVerify">
+                      Authenticate Banknote <span class="arrow">→</span>
+                    </button>
+                  </form>
+                </div>
+                <div class="scan-outputs" id="currencyVerifyOutput">
+                  <div class="output-placeholder">
+                    <iconify-icon icon="mdi:cash-check"></iconify-icon>
+                    <p>Submit banknote photos to check authenticity.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           VIEW: RAG ADVISORY
+           ═══════════════════════════════════════════════════════════ -->
+      <div id="view-rag-advisory" class="dashboard-view">
+        <div class="rag-container">
+          <div class="rag-search-box">
+            <h2>Query Official Cyber advisories</h2>
+            <p>Engage the RAG Advisory engine to retrieve instant answers sourced directly from official security briefs released by MHA, NCRP, RBI, and CERT-In.</p>
+
+            <form id="ragQueryForm" onsubmit="runRagQuery(event)">
+              <div class="rag-input-wrapper">
+                <input type="text" class="form-input rag-input" id="ragQueryText" placeholder="Ask a question (e.g., What should I do if a fake excise officer locks my Skype account?)" required />
+                <button type="submit" class="btn-primary" id="btnRagQuery">Query Engine</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Search Results Area -->
+          <div class="rag-results-wrapper" id="ragQueryOutput" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           VIEW: ANALYTICS (LEO & ADMIN ONLY)
+           ═══════════════════════════════════════════════════════════ -->
+      <div id="view-analytics" class="dashboard-view LEO-only ADMIN-only">
+        <div class="dashboard-grid">
+          <!-- Geospatial Hotspot Map -->
+          <div class="dashboard-card col-span-2">
+            <div class="card-header">
+              <h3>Geospatial Incident Hotspots Map</h3>
+              <span class="tag">// Interactive Map Tracker</span>
+            </div>
+            <div class="map-wrapper" id="hotspotsMap"></div>
+          </div>
+
+          <!-- Threat Intel List -->
+          <div class="dashboard-card">
+            <div class="card-header">
+              <h3>Threat Indicators Feed</h3>
+              <span class="tag">// Live Registry Feed</span>
+            </div>
+            <div class="threat-intel-list" id="threatIntelFull">
+              <div class="loading-spinner"></div>
+            </div>
+          </div>
+
+          <!-- Transaction Network Graph -->
+          <div class="dashboard-card col-span-3">
+            <div class="card-header">
+              <h3>Fraud Transaction Money Trails Network</h3>
+              <span class="tag">// Graph Visualization Analysis</span>
+            </div>
+            <div class="graph-wrapper" id="networkGraph">
+              <!-- Visual placeholder for graph nodes -->
+              <svg viewBox="0 0 1000 400" id="graphSvg" style="width:100%;height:100%;background:rgba(0,0,0,0.15);"></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           VIEW: REPORTS & CASES
+           ═══════════════════════════════════════════════════════════ -->
+      <div id="view-reports" class="dashboard-view">
+        <div class="reports-container">
+          <!-- Citizen view: File + list reports -->
+          <div id="view-citizen-reports">
+            <div class="dashboard-grid">
+              <div class="dashboard-card">
+                <h3>Submit New Crime Incident</h3>
+                <form id="dashReportForm" onsubmit="dashSubmitReport(event)">
+                  <div class="form-group">
+                    <label class="form-label">Report Title</label>
+                    <input type="text" class="form-input" id="dashReportTitle" placeholder="Describe the type of scam briefly" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Scam Category</label>
+                    <select class="form-select" id="dashReportType" required>
+                      <option value="upi_fraud">UPI Fraud</option>
+                      <option value="digital_arrest">Digital Arrest Scam</option>
+                      <option value="counterfeit_currency">Fake Currency</option>
+                      <option value="deepfake">Deepfake Image/Audio</option>
+                      <option value="phishing">Phishing / Text SMS</option>
+                      <option value="other">Other Fraud type</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Full Narrative Description</label>
+                    <textarea class="form-textarea" id="dashReportDesc" placeholder="Narrate details, caller ID, account numbers involved..." required></textarea>
+                  </div>
+                  <button type="submit" class="btn-primary w-full" id="btnDashReportSubmit">File Statement Record <span class="arrow">→</span></button>
+                </form>
+              </div>
+
+              <div class="dashboard-card col-span-2">
+                <h3>Submitted Case Reports</h3>
+                <div class="reports-list-wrapper" id="citizenReportsList">
+                  <div class="loading-spinner"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LEO / Admin view: Case Management List -->
+          <div id="view-leo-cases" class="LEO-only ADMIN-only" style="display:none;">
+            <div class="dashboard-card">
+              <div class="card-header">
+                <h3>Case Management Pipeline</h3>
+                <button class="btn-outline btn-xs" onclick="loadLeoCases()">Refresh Pipeline</button>
+              </div>
+              <div class="cases-table-wrapper">
+                <table class="cases-table">
+                  <thead>
+                    <tr>
+                      <th>Case ID</th>
+                      <th>Incident Title</th>
+                      <th>Category</th>
+                      <th>Reporter email</th>
+                      <th>Verification Status</th>
+                      <th>Urgency / Risk Score</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="leoCasesTableBody">
+                    <tr><td colspan="7"><div class="loading-spinner"></div></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="app.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>

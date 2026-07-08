@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en"><head><script id="aura-preview-performance-controller">
+(function() {
+if (window.__auraPreviewPerformanceController) return;
+const nativeRequestAnimationFrame = window.requestAnimationFrame
+? window.requestAnimationFrame.bind(window)
+: function(callback) { return window.setTimeout(function() { callback(Date.now()); }, 16); };
+const nativeCancelAnimationFrame = window.cancelAnimationFrame
+? window.cancelAnimationFrame.bind(window)
+: window.clearTimeout.bind(window);
+const nativeSetInterval = window.setInterval.bind(window);
+let paused = false;
+let nextFrameId = 1;
+const frameRecords = new Map();
+const pausedFrameCallbacks = new Map();
+const style = document.createElement('style');
+style.id = 'aura-preview-performance-style';
+style.textContent = [
+'html[data-aura-preview-paused="true"] *,',
+'html[data-aura-preview-paused="true"] *::before,',
+'html[data-aura-preview-paused="true"] *::after {',
+'  animation-play-state: paused !important;',
+'  transition-duration: 0s !important;',
+'  scroll-behavior: auto !important;',
+'}'
+].join('\n');
+document.head.appendChild(style);
+window.requestAnimationFrame = function(callback) {
+const frameId = nextFrameId++;
+if (paused) {
+pausedFrameCallbacks.set(frameId, callback);
+frameRecords.set(frameId, { paused: true });
+return frameId;
+}
+const nativeFrameId = nativeRequestAnimationFrame(function(timestamp) {
+frameRecords.delete(frameId);
+callback(timestamp);
+});
+frameRecords.set(frameId, { nativeFrameId: nativeFrameId });
+return frameId;
+};
+window.cancelAnimationFrame = function(frameId) {
+const record = frameRecords.get(frameId);
+pausedFrameCallbacks.delete(frameId);
+if (record && typeof record.nativeFrameId !== 'undefined') {
+nativeCancelAnimationFrame(record.nativeFrameId);
+}
+frameRecords.delete(frameId);
+};
+window.setInterval = function(callback, delay) {
+const args = Array.prototype.slice.call(arguments, 2);
+return nativeSetInterval(function() {
+if (paused) return;
+callback.apply(this, args);
+}, delay);
+};
+const flushPausedFrames = function() {
+const callbacks = Array.from(pausedFrameCallbacks.entries());
+pausedFrameCallbacks.clear();
+callbacks.forEach(function(entry) {
+const frameId = entry[0];
+const callback = entry[1];
+const nativeFrameId = nativeRequestAnimationFrame(function(timestamp) {
+frameRecords.delete(frameId);
+callback(timestamp);
+});
+frameRecords.set(frameId, { nativeFrameId: nativeFrameId });
+});
+};
+const setPaused = function(nextPaused) {
+const shouldPause = Boolean(nextPaused);
+if (paused === shouldPause) return;
+paused = shouldPause;
+document.documentElement.toggleAttribute('data-aura-preview-paused', paused);
+if (!paused) {
+flushPausedFrames();
+}
+};
+window.__auraPreviewPerformanceController = {
+setPaused: setPaused,
+get paused() {
+return paused;
+}
+};
+window.addEventListener('message', function(event) {
+if (event.source !== window.parent) return;
+if (!event.data || event.data.type !== 'aura-preview-performance-mode') return;
+setPaused(event.data.paused);
+});
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KAVACH AI — India's AI-Powered Digital Safety Shield</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://unpkg.com/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@300;400;500&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><!-- aura-ga4-start -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2M6V79H761"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-2M6V79H761');
+</script>
+<!-- aura-ga4-end -->
+  <meta name="description" content="KAVACH AI detects scam messages, deepfakes, counterfeit currency, and digital arrest fraud using multi-agent AI." />
+  <style>
+    #loginModal.active, #registerModal.active {
+      display: flex !important;
+    }
+
+  </style>
+</head>
+
+  <body class="bg-[#050505] text-white antialiased selection:bg-[#00e5ff] selection:text-black min-h-screen overflow-x-hidden" style="font-family:'Inter',sans-serif;font-weight:300;background-image:radial-gradient(circle at 50% 0%,rgba(0,229,255,0.09),transparent 36rem),linear-gradient(135deg,rgba(255,255,255,0.035) 1px,transparent 1px);background-size:auto,3rem 3rem;">
+    <div class="fixed inset-0 pointer-events-none z-0" style="background-image:radial-gradient(circle at 12% 20%,rgba(0,229,255,0.08),transparent 24rem),radial-gradient(circle at 88% 70%,rgba(0,229,255,0.045),transparent 26rem);"></div>
+
+    <div class="relative z-10 w-full">
+      <div class="w-full border-b border-white/10 bg-[#0a0a0a] relative overflow-hidden shadow-2xl shadow-black/60">
+        <span class="absolute left-0 top-0 h-6 w-6 border-l border-t border-[#00e5ff]/40"></span>
+        <span class="absolute right-0 top-0 h-6 w-6 border-r border-t border-[#00e5ff]/40"></span>
+        <span class="absolute bottom-0 left-0 h-6 w-6 border-l border-b border-[#00e5ff]/40"></span>
+        <span class="absolute bottom-0 right-0 h-6 w-6 border-r border-b border-[#00e5ff]/40"></span>
+        <header class="relative z-50 w-full bg-transparent">
+          <div class="relative mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 md:px-10">
+            <a href="#top" class="font-mono text-lg uppercase tracking-[0.55em] text-white">KAVACH AI</a>
+            <nav class="hidden items-center gap-10 md:flex">
+              <a href="#features" class="font-mono text-xs text-white/80 transition-colors duration-300 hover:text-[#00e5ff]">
+                AI Shield
+              </a>
+              <a href="#channels" class="font-mono text-xs text-white/80 transition-colors duration-300 hover:text-[#00e5ff]">
+                Threat Intel
+              </a>
+              <a href="#how-it-works" class="font-mono text-xs text-white/80 transition-colors duration-300 hover:text-[#00e5ff]">
+                Scan Tools
+              </a>
+              <a href="#pricing" class="font-mono text-xs text-white/80 transition-colors duration-300 hover:text-[#00e5ff]">
+                Access Tiers
+              </a>
+            </nav>
+            <button id="loginBtn" onclick="openLoginModal()" class="hidden border border-[#00e5ff]/50 px-8 py-3 font-mono text-[10px] uppercase tracking-widest text-[#00e5ff] transition-all duration-300 hover:bg-[#00e5ff]/10 sm:inline-flex">Login / Dashboard</button>
+          </div>
+        </header>
+      </div>
+      <div class="w-full bg-[#0a0a0a] overflow-hidden shadow-2xl shadow-black/60">
+        <main id="top" class="">
+          <section class="relative overflow-hidden border-b border-white/10 bg-[#02060b] min-h-[760px]">
+            <video src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/generated-videos/5bd6211c-bd4c-467c-b442-4312cac4712c/1779296002747-748f252a-dd7c-4cc1-b6c1-9d8281422697.mp4" poster="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/065396b6-8665-4517-a9fd-d4450f2dfb04_1600w.png" data-aura-generated-video="true" data-aura-video-preset="loop-in-view" muted="" playsinline="" preload="metadata" loop="" aria-label="Digital Social Media Integration Concept" class="absolute inset-0 h-full w-full object-cover" style="-webkit-mask-image: linear-gradient(to bottom, black 65%, transparent 100%); mask-image: linear-gradient(to bottom, black 65%, transparent 100%);"></video>
+            <div class="absolute inset-0 bg-gradient-to-r from-black/10 via-black/5 to-black/45"></div>
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_52%,rgba(0,229,255,0.08),transparent_28rem)]"></div>
+            <span class="absolute bottom-0 left-0 h-4 w-4 border-b border-l border-[#00e5ff]/70"></span>
+            <span class="absolute bottom-0 right-0 h-4 w-4 border-b border-r border-[#00e5ff]/70"></span>
+            <span class="absolute bottom-0 left-8 flex gap-1">
+              <span class="h-0.5 w-0.5 rounded-full bg-[#00e5ff]"></span>
+              <span class="h-0.5 w-0.5 rounded-full bg-[#00e5ff]"></span>
+              <span class="h-0.5 w-0.5 rounded-full bg-[#00e5ff]"></span>
+              <span class="h-0.5 w-0.5 rounded-full bg-[#00e5ff]"></span>
+              <span class="h-0.5 w-0.5 rounded-full bg-[#00e5ff]"></span>
+            </span>
+            <span class="absolute bottom-0 right-8 flex gap-1">
+              <span class="h-0.5 w-0.5 rounded-full bg-[#00e5ff]"></span>
+              <span class="h-0.5 w-0.5 rounded-full bg-[#00e5ff]"></span>
+              <span class="h-0.5 w-0.5 rounded-full bg-[#00e5ff]"></span>
+              <span class="h-0.5 w-0.5 rounded-full bg-[#00e5ff]"></span>
+              <span class="h-0.5 w-0.5 rounded-full bg-[#00e5ff]"></span>
+            </span>
+            <div class="relative z-10 mx-auto max-w-7xl w-full flex flex-col justify-end px-6 pb-10 md:px-10 lg:px-12 lg:pb-16 pt-4 min-h-[760px]">
+              <div class="flex w-full flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
+                <div class="max-w-[36rem]">
+                  <p class="font-mono text-xs uppercase tracking-[0.22em] text-white">
+                    AI-Powered Protection × Digital Safety
+                  </p>
+                  <h1 class="mt-5 text-5xl leading-[1.08] tracking-tight text-white md:text-6xl" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:200;">
+                    Defeat Fraud, Deepfakes &
+                    <span class="text-[#00e5ff]">Digital Arrest Scams</span>
+                  </h1>
+                </div>
+
+                <div class="max-w-[22rem] shrink-0">
+                  <p class="text-sm leading-relaxed text-white/80">
+                    Scan suspicious messages, verify currency authenticity, detect deepfakes, and report cyber fraud — all powered by multi-agent AI built for India's 1.4 billion citizens.
+                  </p>
+                  <div class="mt-6 flex flex-wrap gap-4">
+                    <a href="#" onclick="openRegisterModal(); return false;" class="group inline-flex items-center justify-center gap-5 bg-[#00e5ff] px-7 py-3 font-mono text-xs text-black transition-all duration-300 hover:bg-white hover:shadow-[0_0_24px_rgba(0,229,255,0.35)]">
+                      Scan Now
+                      <iconify-icon icon="solar:arrow-right-linear" class="text-base transition-transform duration-300 group-hover:translate-x-1" stroke-width="1.5"></iconify-icon>
+                    </a>
+                    <a href="#" onclick="openRegisterModal(); return false;" class="inline-flex items-center justify-center border border-[#00e5ff]/35 bg-black/20 px-7 py-3 font-mono text-xs text-white transition-all duration-300 hover:bg-[#00e5ff]/10 hover:text-[#00e5ff]">
+                      Report Fraud
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="grid grid-cols-2 border-b border-white/10 bg-[#080808] md:grid-cols-4">
+            <div class="group border-b border-r border-white/10 p-6 transition-all duration-300 hover:bg-white/[0.025] md:border-b-0">
+              <p class="font-mono text-xs uppercase tracking-widest text-white/35">
+                AI Scans Completed
+              </p>
+              <p class="mt-4 text-3xl tracking-tight text-white" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                18M+
+              </p>
+            </div>
+            <div class="group border-b border-white/10 p-6 transition-all duration-300 hover:bg-white/[0.025] md:border-b-0 md:border-r">
+              <p class="font-mono text-xs uppercase tracking-widest text-white/35">
+                Avg. Scan Response
+              </p>
+              <p class="mt-4 text-3xl tracking-tight text-white" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                < 2s
+              </p>
+            </div>
+            <div class="group border-r border-white/10 p-6 transition-all duration-300 hover:bg-white/[0.025]">
+              <p class="font-mono text-xs uppercase tracking-widest text-white/35">
+                Threat Detection Accuracy
+              </p>
+              <p class="mt-4 text-3xl tracking-tight text-white" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                99.9%
+              </p>
+            </div>
+            <div class="group p-6 transition-all duration-300 hover:bg-white/[0.025]">
+              <p class="font-mono text-xs uppercase tracking-widest text-white/35">
+                Gov Sources Indexed
+              </p>
+              <p class="mt-4 text-3xl tracking-tight text-[#00e5ff]" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                4+
+              </p>
+            </div>
+          </section>
+
+          <section id="features" class="relative border-b border-white/10 bg-[#0a0a0a]">
+            <span class="absolute left-0 top-0 h-6 w-6 border-l border-t border-[#00e5ff]/40"></span>
+            <span class="absolute right-0 top-0 h-6 w-6 border-r border-t border-[#00e5ff]/40"></span>
+
+            <div class="grid grid-cols-1 border-b border-white/10 lg:grid-cols-[0.8fr_1.2fr]">
+              <div class="border-b border-white/10 p-6 md:p-10 lg:border-b-0 lg:border-r lg:p-14">
+                <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                  // AI Shield
+                </p>
+                <h2 class="reveal mt-5 max-w-md text-4xl uppercase leading-none tracking-tight text-white md:text-5xl" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">Interactive Threat Data.</h2>
+              </div>
+              <div class="p-6 md:p-10 lg:p-14">
+                <p class="max-w-2xl text-sm leading-relaxed text-white/50">
+                  KAVACH AI integrates text scam detection, deepfake analytics, registry blacklists, currency verification and RAG advisories into one unified threat interface. Scan instantly and protect yourself.
+                </p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3">
+              <article class="interactive group border-b border-white/10 p-6 transition-all duration-500 hover:bg-white/[0.025] md:border-b-0 md:border-r md:p-10">
+                <div class="mb-8 flex items-start justify-between">
+                  <span class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                    01
+                  </span>
+                  <span class="flex h-11 w-11 items-center justify-center border border-white/10 bg-black/40 text-white transition-all duration-300 group-hover:border-[#00e5ff]/50 group-hover:text-[#00e5ff] group-hover:shadow-[0_0_20px_rgba(0,229,255,0.14)]">
+                    <iconify-icon icon="solar:shield-search-linear" class="text-2xl" stroke-width="1.5"></iconify-icon>
+                  </span>
+                </div>
+                <h3 class="text-xl uppercase tracking-tight text-white" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                  Scam Detector
+                </h3>
+                <p class="mt-4 text-sm leading-relaxed text-white/45">
+                  Analyze SMS, WhatsApp, email, and call transcripts for phishing, lottery scams, impersonation, and digital arrest tactics using NLP pattern matching.
+                </p>
+              </article>
+
+              <article class="interactive group border-b border-white/10 p-6 transition-all duration-500 hover:bg-white/[0.025] md:border-b-0 md:border-r md:p-10">
+                <div class="mb-8 flex items-start justify-between">
+                  <span class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                    02
+                  </span>
+                  <span class="flex h-11 w-11 items-center justify-center border border-white/10 bg-black/40 text-white transition-all duration-300 group-hover:border-[#00e5ff]/50 group-hover:text-[#00e5ff] group-hover:shadow-[0_0_20px_rgba(0,229,255,0.14)]">
+                    <iconify-icon icon="solar:face-recognition-linear" class="text-2xl" stroke-width="1.5"></iconify-icon>
+                  </span>
+                </div>
+                <h3 class="text-xl uppercase tracking-tight text-white" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                  Deepfake Forensics
+                </h3>
+                <p class="mt-4 text-sm leading-relaxed text-white/45">
+                  Upload images or audio to detect AI-generated face swaps, voice cloning, and manipulated media using FFT noise spectrum analysis.
+                </p>
+              </article>
+
+              <article class="interactive group p-6 transition-all duration-500 hover:bg-white/[0.025] md:p-10">
+                <div class="mb-8 flex items-start justify-between">
+                  <span class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                    03
+                  </span>
+                  <span class="flex h-11 w-11 items-center justify-center border border-white/10 bg-black/40 text-white transition-all duration-300 group-hover:border-[#00e5ff]/50 group-hover:text-[#00e5ff] group-hover:shadow-[0_0_20px_rgba(0,229,255,0.14)]">
+                    <iconify-icon icon="solar:banknote-linear" class="text-2xl" stroke-width="1.5"></iconify-icon>
+                  </span>
+                </div>
+                <h3 class="text-xl uppercase tracking-tight text-white" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                  Currency Authenticator
+                </h3>
+                <p class="mt-4 text-sm leading-relaxed text-white/45">
+                  Photograph any Indian banknote to verify RBI security features including watermarks, color-shifting threads, and micro-lettering alignment.
+                </p>
+              </article>
+            </div>
+
+            <div class="grid grid-cols-1 border-t border-white/10 lg:grid-cols-2">
+                                          <div class="relative min-h-[24rem] overflow-hidden border-b border-white/10 lg:border-b-0 lg:border-r">
+                <video src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/generated-videos/5bd6211c-bd4c-467c-b442-4312cac4712c/1779464315059-b1434dc5-68ee-4762-8e89-1c7df7fe629e.mp4" poster="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/70798318-fa28-4f71-9aea-5c7ce59580dd_3840w.png" data-aura-generated-video="true" data-aura-video-preset="loop-in-view" muted="" playsinline="" preload="metadata" loop="" aria-label="Social team operating Novi workflows" class="h-full w-full object-cover opacity-55 transition-all duration-700 hover:scale-105 hover:opacity-70"></video>
+                <div class="absolute inset-0" style="background-image:linear-gradient(180deg,transparent,rgba(5,5,5,0.88));"></div>
+                <div class="absolute bottom-6 left-6 right-6 border border-white/10 bg-black/50 p-4 backdrop-blur-md">
+                  <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                    AI Pipeline
+                  </p>
+                  <p class="mt-2 text-sm text-white/65">
+                    When threats are detected, KAVACH AI checks registries, runs deepfake tests, matches blacklists, and searches RAG advisories automatically.
+                  </p>
+                </div>
+              </div>
+                <div class="absolute inset-0 z-0 opacity-10" style="background-image: linear-gradient(rgba(0,229,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,0.1) 1px, transparent 1px); background-size: 20px 20px;"></div>
+                
+                <!-- Monitor Header -->
+                <div class="relative z-10 flex items-center justify-between border-b border-[#00e5ff]/20 pb-3 text-[10px] tracking-widest text-[#00e5ff]">
+                  <div class="flex items-center gap-2">
+                    <span class="inline-block h-2 w-2 animate-ping bg-[#00e5ff] rounded-full"></span>
+                    <span>ACTIVE CYBER THREAT COMMAND CENTER</span>
+                  </div>
+                  <span class="border border-[#00e5ff]/40 bg-[#00e5ff]/10 px-2 py-0.5 text-[8px]">SECURE PIPELINE</span>
+                </div>
+
+                <!-- Central Scanner widget -->
+                <div class="relative z-10 my-auto flex flex-col items-center py-4">
+                  <div class="relative flex h-32 w-32 items-center justify-center rounded-full border border-dashed border-[#00e5ff]/20 bg-black/40 shadow-[0_0_40px_rgba(0,229,255,0.07)]">
+                    <div class="absolute inset-2 animate-[spin_10s_linear_infinite] rounded-full border-t border-[#00e5ff]/60 border-l border-[#00e5ff]/15"></div>
+                    <div class="absolute inset-4 animate-[spin_6s_linear_reverse_infinite] rounded-full border-b border-[#00e5ff]/40"></div>
+                    
+                    <div class="text-center">
+                      <span class="font-mono text-2xl font-bold tracking-tight text-white animate-pulse">98.4%</span>
+                      <div class="text-[8px] tracking-widest text-red-500 font-bold uppercase mt-1">DANGER RATIO</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Log list -->
+                <div class="relative z-10 bg-black/40 border border-white/5 p-3 text-[9px] text-white/50 space-y-1 font-mono max-h-32 overflow-hidden shadow-inner">
+                  <div class="flex gap-2 text-white/30">
+                    <span>[11:42:52]</span> <span class="text-[#00e5ff]">SYS:</span> <span>Multi-agent threat analysis initialized...</span>
+                  </div>
+                  <div class="flex gap-2">
+                    <span>[11:42:53]</span> <span class="text-red-400">NLP:</span> <span>SMS phishing pattern matched (Lottery trigger)</span>
+                  </div>
+                  <div class="flex gap-2">
+                    <span>[11:42:53]</span> <span class="text-yellow-400">VOX:</span> <span>Deepfake voice cloned fingerprint identified</span>
+                  </div>
+                  <div class="flex gap-2 text-green-400 animate-pulse font-semibold">
+                    <span>[11:42:54]</span> <span class="text-green-400">NCRP:</span> <span>Blacklist lookup: Block recommended immediately</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2">
+                <div class="group border-b border-white/10 p-6 transition-all duration-300 hover:bg-white/[0.025] sm:border-r">
+                  <iconify-icon icon="solar:magnify-scan-linear" class="text-2xl text-[#00e5ff]" stroke-width="1.5"></iconify-icon>
+                  <h4 class="mt-8 font-mono text-xs uppercase tracking-widest text-white">
+                    Entity Checker
+                  </h4>
+                  <p class="mt-3 text-sm leading-relaxed text-white/45">
+                    Verify phone numbers, UPI IDs, domains, and bank accounts against national blacklist databases.
+                  </p>
+                </div>
+                <div class="group border-b border-white/10 p-6 transition-all duration-300 hover:bg-white/[0.025]">
+                  <iconify-icon icon="solar:shield-check-linear" class="text-2xl text-[#00e5ff]" stroke-width="1.5"></iconify-icon>
+                  <h4 class="mt-8 font-mono text-xs uppercase tracking-widest text-white">
+                    Threat Intel Feed
+                  </h4>
+                  <p class="mt-3 text-sm leading-relaxed text-white/45">
+                    Access real-time multi-source threat indicators from CERT-In, RBI, and NCRP registries.
+                  </p>
+                </div>
+                <div class="group border-b border-white/10 p-6 transition-all duration-300 hover:bg-white/[0.025] sm:border-b-0 sm:border-r">
+                  <iconify-icon icon="solar:widget-2-linear" class="text-2xl text-[#00e5ff]" stroke-width="1.5"></iconify-icon>
+                  <h4 class="mt-8 font-mono text-xs uppercase tracking-widest text-white">
+                    Fraud Graph Network
+                  </h4>
+                  <p class="mt-3 text-sm leading-relaxed text-white/45">
+                    Visualize transaction money trails and identify mule account clusters using graph centrality analysis.
+                  </p>
+                </div>
+                <div class="group p-6 transition-all duration-300 hover:bg-white/[0.025]">
+                  <iconify-icon icon="solar:book-search-linear" class="text-2xl text-[#00e5ff]" stroke-width="1.5"></iconify-icon>
+                  <h4 class="mt-8 font-mono text-xs uppercase tracking-widest text-white">
+                    RAG Advisory
+                  </h4>
+                  <p class="mt-3 text-sm leading-relaxed text-white/45">
+                    Query official MHA, RBI, and CERT-In advisories to get verified safety guidance instantly.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="channels" class="relative border-b border-white/10 bg-[#0a0a0a]">
+            <div class="grid grid-cols-1 border-b border-white/10 lg:grid-cols-[0.8fr_1.2fr]">
+              <div class="border-b border-white/10 p-6 md:p-10 lg:border-b-0 lg:border-r lg:p-14">
+                <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                  // Trusted Data Sources
+                </p>
+                <h2 class="reveal mt-5 max-w-md text-4xl uppercase leading-none tracking-tight text-white md:text-5xl" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">Interactive Threat Data.</h2>
+              </div>
+              <div class="p-6 md:p-10 lg:p-14 flex flex-col justify-center">
+                <p class="max-w-2xl text-sm leading-relaxed text-white/50">
+                  KAVACH AI references database pools and compliance advisories from key national regulatory bodies to provide verified, legally-aligned insights.
+                </p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4">
+              <div class="group border-b border-r border-white/10 p-6 transition-all duration-300 hover:bg-white/[0.025] md:border-b-0 flex flex-col items-center justify-center min-h-[160px]">
+                <iconify-icon icon="solar:shield-home-linear" class="text-4xl text-white/60 group-hover:text-[#00e5ff] transition-colors duration-300"></iconify-icon>
+                <p class="mt-4 font-mono text-xs uppercase tracking-widest text-white/40 group-hover:text-white transition-colors duration-300">
+                  MHA / NCRP
+                </p>
+              </div>
+              <div class="group border-b border-white/10 p-6 transition-all duration-300 hover:bg-white/[0.025] md:border-b-0 md:border-r flex flex-col items-center justify-center min-h-[160px]">
+                <iconify-icon icon="solar:bank-linear" class="text-4xl text-white/60 group-hover:text-[#00e5ff] transition-colors duration-300"></iconify-icon>
+                <p class="mt-4 font-mono text-xs uppercase tracking-widest text-white/40 group-hover:text-white transition-colors duration-300">
+                  Reserve Bank of India
+                </p>
+              </div>
+              <div class="group border-r border-white/10 p-6 transition-all duration-300 hover:bg-white/[0.025] flex flex-col items-center justify-center min-h-[160px]">
+                <iconify-icon icon="solar:security-rounded-linear" class="text-4xl text-white/60 group-hover:text-[#00e5ff] transition-colors duration-300"></iconify-icon>
+                <p class="mt-4 font-mono text-xs uppercase tracking-widest text-white/40 group-hover:text-white transition-colors duration-300">
+                  CERT-In
+                </p>
+              </div>
+              <div class="group p-6 transition-all duration-300 hover:bg-white/[0.025] flex flex-col items-center justify-center min-h-[160px]">
+                <iconify-icon icon="solar:global-linear" class="text-4xl text-white/60 group-hover:text-[#00e5ff] transition-colors duration-300"></iconify-icon>
+                <p class="mt-4 font-mono text-xs uppercase tracking-widest text-white/40 group-hover:text-white transition-colors duration-300">
+                  cybercrime.gov.in
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section id="how-it-works" class="relative border-b border-white/10 bg-[#080808]">
+            <div class="absolute inset-0 pointer-events-none" style="background-image:linear-gradient(135deg,rgba(255,255,255,0.025) 1px,transparent 1px);background-size:3rem 3rem;"></div>
+            <div class="relative grid grid-cols-1 border-b border-white/10 lg:grid-cols-[1.2fr_0.8fr]">
+              <div class="border-b border-white/10 p-6 md:p-10 lg:border-b-0 lg:border-r lg:p-14">
+                <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                  // Platform Workflow
+                </p>
+                <h2 class="reveal mt-5 max-w-md text-4xl uppercase leading-none tracking-tight text-white md:text-5xl" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">Interactive Threat Data.</h2>
+              </div>
+              <div class="p-6 md:p-10 lg:p-14 flex flex-col justify-center">
+                <p class="max-w-2xl text-sm leading-relaxed text-white/50">
+                  Our platform processes suspect elements in real-time using parallel AI agents to yield binary verdicts and action guides instantly.
+                </p>
+              </div>
+            </div>
+
+            <div class="relative grid grid-cols-1 md:grid-cols-3">
+              <div class="interactive group border-b border-white/10 p-6 transition-all duration-500 hover:bg-white/[0.025] md:border-b-0 md:border-r md:p-10">
+                <div class="mb-8 flex items-start justify-between">
+                  <span class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                    01
+                  </span>
+                  <span class="flex h-11 w-11 items-center justify-center border border-white/10 bg-black/40 text-white transition-all duration-300 group-hover:border-[#00e5ff]/50 group-hover:text-[#00e5ff] group-hover:shadow-[0_0_20px_rgba(0,229,255,0.14)]">
+                    <iconify-icon icon="solar:user-plus-linear" class="text-2xl" stroke-width="1.5"></iconify-icon>
+                  </span>
+                </div>
+                <h3 class="text-xl uppercase tracking-tight text-white" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                  Register & Login
+                </h3>
+                <p class="mt-4 text-sm leading-relaxed text-white/45">
+                  Create your citizen account. JWT-secured role-based authentication protects your data logs.
+                </p>
+              </div>
+
+              <div class="interactive group border-b border-white/10 p-6 transition-all duration-500 hover:bg-white/[0.025] md:border-b-0 md:border-r md:p-10">
+                <div class="mb-8 flex items-start justify-between">
+                  <span class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                    02
+                  </span>
+                  <span class="flex h-11 w-11 items-center justify-center border border-white/10 bg-black/40 text-white transition-all duration-300 group-hover:border-[#00e5ff]/50 group-hover:text-[#00e5ff] group-hover:shadow-[0_0_20px_rgba(0,229,255,0.14)]">
+                    <iconify-icon icon="solar:widget-linear" class="text-2xl" stroke-width="1.5"></iconify-icon>
+                  </span>
+                </div>
+                <h3 class="text-xl uppercase tracking-tight text-white" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                  Scan or Report
+                </h3>
+                <p class="mt-4 text-sm leading-relaxed text-white/45">
+                  Paste suspect text, call logs, upload media files, banknotes, or submit cyber crime incident details.
+                </p>
+              </div>
+
+              <div class="interactive group p-6 transition-all duration-500 hover:bg-white/[0.025] md:p-10">
+                <div class="mb-8 flex items-start justify-between">
+                  <span class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                    03
+                  </span>
+                  <span class="flex h-11 w-11 items-center justify-center border border-white/10 bg-black/40 text-white transition-all duration-300 group-hover:border-[#00e5ff]/50 group-hover:text-[#00e5ff] group-hover:shadow-[0_0_20px_rgba(0,229,255,0.14)]">
+                    <iconify-icon icon="solar:shield-warning-linear" class="text-2xl" stroke-width="1.5"></iconify-icon>
+                  </span>
+                </div>
+                <h3 class="text-xl uppercase tracking-tight text-white" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                  Get AI Verdict &amp; Act
+                </h3>
+                <p class="mt-4 text-sm leading-relaxed text-white/45">
+                  Get a clear compromise threat score, step-by-step risk response actions, and official police reporting assistance.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section id="channels" class="relative border-b border-white/10 bg-[#080808]">
+            <div class="absolute inset-0 pointer-events-none" style="background-image:linear-gradient(135deg,rgba(255,255,255,0.025) 1px,transparent 1px);background-size:3rem 3rem;"></div>
+            <div class="relative grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
+              <div class="border-b border-white/10 p-6 md:p-10 lg:border-b-0 lg:border-r lg:p-14">
+                <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                  // Helpline KAVACH AI
+                </p>
+                <h2 class="reveal mt-5 text-4xl uppercase leading-none tracking-tight text-white md:text-5xl" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">File an Official Incident Report.</h2>
+                <p class="mt-7 max-w-xl text-sm leading-relaxed text-white/50">
+                  KAVACH AI is a multi-agent digital safety platform built to solve Problem Statement 3 for the ET AI Hackathon 2026. Made by cyber practitioners and AI safety engineers, it empowers citizens and law enforcement officers alike to combat digital crimes.
+                </p>
+
+                <div class="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div class="border border-white/10 bg-black/25 p-4">
+                    <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                      01
+                    </p>
+                    <p class="mt-5 text-sm text-white/65">
+                      Parallel Multi-Agent AI Scanners
+                    </p>
+                  </div>
+                  <div class="border border-white/10 bg-black/25 p-4">
+                    <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                      02
+                    </p>
+                    <p class="mt-5 text-sm text-white/65">
+                      National Registry Blacklists
+                    </p>
+                  </div>
+                  <div class="border border-white/10 bg-black/25 p-4">
+                    <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                      03
+                    </p>
+                    <p class="mt-5 text-sm text-white/65">
+                      RAG-Aligned Advice & Hotspot Mapping
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="p-6 md:p-10 lg:p-14">
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="group overflow-hidden border border-white/10 bg-black/30">
+                    <video src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/generated-videos/5bd6211c-bd4c-467c-b442-4312cac4712c/1779465883374-69200c36-1ef1-4273-b00b-0e0e668dad02.mp4" poster="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/6330f6d8-4cc0-4d1b-8085-f315c615b202_800w.webp" data-aura-generated-video="true" data-aura-video-preset="loop-in-view" muted="" playsinline="" preload="metadata" loop="" aria-label="Novi team member" class="h-56 w-full object-cover opacity-70 transition-all duration-700 group-hover:scale-105 group-hover:opacity-90"></video>
+                    <div class="border-t border-white/10 p-4">
+                      <p class="font-mono text-xs uppercase tracking-widest text-white">
+                        ET AI Hackathon
+                      </p>
+                      <p class="mt-1 font-mono text-xs uppercase tracking-widest text-white/35">
+                        Operations Code
+                      </p>
+                      <div class="border-t border-white/15 mt-3 pt-2 text-[8px] text-white/35 text-center">
+                        ET AI HACKATHON CORE RUNTIME
+                      </div>
+                    </div>
+                  </div>
+                  <div class="group overflow-hidden border border-white/10 bg-black/30">
+                    <video src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/generated-videos/5bd6211c-bd4c-467c-b442-4312cac4712c/1779465966664-badb485f-fcf9-431d-93f3-f4c704fa1ca6.mp4" poster="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/8f869148-195a-4100-981c-34c0ee95afe0_800w.webp" data-aura-generated-video="true" data-aura-video-preset="loop-in-view" muted="" playsinline="" preload="metadata" loop="" aria-label="Novi engineer" class="h-56 w-full object-cover opacity-70 transition-all duration-700 group-hover:scale-105 group-hover:opacity-90"></video>
+                    <div class="border-t border-white/10 p-4">
+                      <p class="font-mono text-xs uppercase tracking-widest text-white">
+                        Cyber Command
+                      </p>
+                      <p class="mt-1 font-mono text-xs uppercase tracking-widest text-white/35">
+                        Active Threat Monitor
+                      </p>
+                      <div class="border-t border-white/15 mt-3 pt-2 text-[8px] text-white/35 text-center">
+                        CYBER CELL SECURITY CONSOLE
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="gallery" class="relative border-b border-white/10 bg-[#0a0a0a]">
+            <div class="grid grid-cols-1 border-b border-white/10 lg:grid-cols-[0.8fr_1.2fr]">
+              <div class="border-b border-white/10 p-6 md:p-10 lg:border-b-0 lg:border-r lg:p-14">
+                <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                  // Platform Capabilities
+                </p>
+                <h2 class="reveal mt-5 max-w-md text-4xl uppercase leading-none tracking-tight text-white md:text-5xl" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">Interactive Threat Data.</h2>
+              </div>
+              <div class="p-6 md:p-10 lg:p-14 flex flex-col justify-center">
+                <p class="max-w-2xl text-sm leading-relaxed text-white/50">
+                  Visualizing safety across multiple vector streams: geospatial crime hot-zone charts, mule transaction tracks, audit logs, and unified dashboards.
+                </p>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+              <div class="group relative aspect-square border-b border-white/10 sm:border-r lg:border-b-0 overflow-hidden bg-[#050505]">
+                <video src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/generated-videos/5bd6211c-bd4c-467c-b442-4312cac4712c/1779465666711-fcee2db4-3f75-4812-a35c-ae89f182e48c.mp4" poster="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/f9b36f1d-1e26-4453-9c74-2a4b6f65a3e9_800w.png" data-aura-generated-video="true" data-aura-video-preset="loop-in-view" muted="" playsinline="" preload="metadata" loop="" aria-label="Social Media Management and Analytics Dashboard Concept" class="h-full w-full object-cover opacity-60 transition-all duration-700 group-hover:scale-105 group-hover:opacity-100"></video>
+                <div class="absolute bottom-6 left-6 border border-white/10 bg-black/60 p-3 backdrop-blur-md opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+                  <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                    Threat Intel Hub
+                  </p>
+                </div>
+              </div>
+              <div class="group relative aspect-square border-b border-white/10 lg:border-r lg:border-b-0 overflow-hidden bg-[#050505]">
+                <video src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/generated-videos/5bd6211c-bd4c-467c-b442-4312cac4712c/1779466076215-5fcfe4d9-aa70-4c5a-b8c9-a91abefb1f66.mp4" poster="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/5bbed24b-9bed-4c14-8f3b-8cc0c7289fc5_800w.png" data-aura-generated-video="true" data-aura-video-preset="loop-in-view" muted="" playsinline="" preload="metadata" loop="" aria-label="Neon Digital Automation Flow Diagram" class="h-full w-full object-cover opacity-60 transition-all duration-700 group-hover:scale-105 group-hover:opacity-100"></video>
+                <div class="absolute bottom-6 left-6 border border-white/10 bg-black/60 p-3 backdrop-blur-md opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+                  <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                    Geospatial Heatmap
+                  </p>
+                </div>
+              </div>
+              <div class="group relative aspect-square border-b border-white/10 sm:border-b-0 sm:border-r overflow-hidden bg-[#050505]">
+                <video src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/generated-videos/5bd6211c-bd4c-467c-b442-4312cac4712c/1779466138459-048cd9ad-f5a6-4cc1-95ed-ef7f04e1f495.mp4" poster="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/c4d8d2df-f741-4048-93e5-e8e0fa132b0e_800w.png" data-aura-generated-video="true" data-aura-video-preset="loop-in-view" muted="" playsinline="" preload="metadata" loop="" aria-label="Digital Social Media Growth Analytics Dashboard" class="h-full w-full object-cover opacity-60 transition-all duration-700 group-hover:scale-105 group-hover:opacity-100"></video>
+                <div class="absolute bottom-6 left-6 border border-white/10 bg-black/60 p-3 backdrop-blur-md opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+                  <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                    Fraud Network Graph
+                  </p>
+                </div>
+              </div>
+              <div class="group relative aspect-square overflow-hidden bg-[#050505]">
+                <video src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/generated-videos/5bd6211c-bd4c-467c-b442-4312cac4712c/1779465790880-9599dccd-9859-4b11-b5cb-97e6cda4d724.mp4" poster="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/e0b5ba32-a84f-43b6-99b5-fc5086ee3aa0_800w.png" data-aura-generated-video="true" data-aura-video-preset="loop-in-view" muted="" playsinline="" preload="metadata" loop="" aria-label="Futuristic Social Media Analytics Dashboard" class="h-full w-full object-cover opacity-60 transition-all duration-700 group-hover:scale-105 group-hover:opacity-100"></video>
+                <div class="absolute bottom-6 left-6 border border-white/10 bg-black/60 p-3 backdrop-blur-md opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+                  <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                    RAG Advisory Console
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="relative border-b border-white/10 bg-[#060606] p-6 md:p-10 lg:p-16">
+            <span class="absolute left-0 top-0 h-6 w-6 border-l border-t border-[#00e5ff]/40"></span>
+            <span class="absolute right-0 bottom-0 h-6 w-6 border-b border-r border-[#00e5ff]/40"></span>
+
+            <div class="mx-auto max-w-4xl text-center">
+              <iconify-icon icon="solar:quote-left-linear" class="mx-auto mb-8 text-5xl text-[#00e5ff]/30" stroke-width="1.5"></iconify-icon>
+              <h2 class="reveal text-3xl uppercase leading-tight tracking-tight text-white md:text-5xl" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">KAVACH AI GAVE US THE DIGITAL SECURITY FORESIGHT OF A 50-PERSON CYBER CELL, ANSWERING CITIZEN SCANS AND TRACKING FRAUD VECTORS IN REAL TIME.</h2>
+              <div class="mt-10 flex items-center justify-center gap-4">
+                <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/3012bbbf-121f-4308-810b-4e024631baa5_320w.webp" alt="Registry Verifyer avatar" class="h-12 w-12 rounded-full border border-white/15 object-cover">
+                <div class="text-left">
+                  <p class="font-mono text-xs uppercase tracking-widest text-white">
+                    National Cyber Cell
+                  </p>
+                  <p class="mt-1 font-mono text-xs uppercase tracking-widest text-white/35">
+                    Operations Council
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-14 grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div class="border border-white/10 bg-white/[0.02] p-5">
+                <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                  Proof 01
+                </p>
+                <p class="mt-5 text-2xl tracking-tight text-white" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                  6 Engines
+                </p>
+                <p class="mt-2 text-sm text-white/45">
+                  Analyzing threats in parallel
+                </p>
+              </div>
+              <div class="border border-white/10 bg-white/[0.02] p-5">
+                <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                  Proof 02
+                </p>
+                <p class="mt-5 text-2xl tracking-tight text-white" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                  < 2 sec
+                </p>
+                <p class="mt-2 text-sm text-white/45">
+                  Average scan processing latency
+                </p>
+              </div>
+              <div class="border border-white/10 bg-white/[0.02] p-5">
+                <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                  Proof 03
+                </p>
+                <p class="mt-5 text-2xl tracking-tight text-white" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                  4 Sources
+                </p>
+                <p class="mt-2 text-sm text-white/45">
+                  CERT-In, RBI, NCRP & MHA data
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section id="pricing" class="relative border-b border-white/10 bg-[#0a0a0a]">
+            <div class="flex flex-col justify-between gap-6 border-b border-white/10 p-6 md:flex-row md:items-end md:p-10 lg:p-14">
+              <div>
+                <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                  // Access Tiers
+                </p>
+                <h2 class="reveal mt-5 text-4xl uppercase leading-none tracking-tight text-white md:text-5xl" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">File an Official Incident Report.</h2>
+              </div>
+
+              <div class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">Verified Role Based Access</div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3">
+              <div class="interactive group border-b border-white/10 p-6 transition-all duration-500 hover:bg-white/[0.02] md:p-10 lg:border-b-0 lg:border-r">
+                <p class="font-mono text-xs uppercase tracking-widest text-white/40">
+                  Citizen
+                </p>
+                <h3 class="mt-3 text-2xl uppercase tracking-tight text-white" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                  Free Shield
+                </h3>
+                <div class="my-8 border-y border-white/10 py-6">
+                  <span class="price text-5xl tracking-tight text-white" data-month="₹0" data-year="₹0" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                    ₹0
+                  </span>
+                  <span class="font-mono text-xs uppercase tracking-widest text-white/35">
+                    /always
+                  </span>
+                </div>
+                <ul class="space-y-4 text-sm text-white/60">
+                  <li class="flex gap-3">
+                    <iconify-icon icon="solar:check-circle-linear" class="text-[#00e5ff]" stroke-width="1.5"></iconify-icon>
+                    Scan SMS & call transcripts
+                  </li>
+                  <li class="flex gap-3">
+                    <iconify-icon icon="solar:check-circle-linear" class="text-[#00e5ff]" stroke-width="1.5"></iconify-icon>
+                    Verify currency authenticity
+                  </li>
+                  <li class="flex gap-3">
+                    <iconify-icon icon="solar:check-circle-linear" class="text-[#00e5ff]" stroke-width="1.5"></iconify-icon>
+                    Detect deepfake images & audio
+                  </li>
+                </ul>
+                <a href="#" onclick="openRegisterModal(); return false;" class="mt-10 inline-flex w-full items-center justify-center border border-white/10 px-5 py-3.5 font-mono text-xs uppercase tracking-widest text-white transition-all duration-300 hover:border-[#00e5ff]/50 hover:bg-[#00e5ff]/5 hover:text-[#00e5ff]">
+                  Register Free
+                </a>
+              </div>
+
+              <div class="interactive group relative border-b border-white/10 bg-[#00e5ff]/[0.025] p-6 transition-all duration-500 hover:bg-[#00e5ff]/[0.04] md:p-10 lg:border-b-0 lg:border-r">
+                <div class="absolute right-6 top-6 bg-[#00e5ff]/10 px-2 py-1 font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                  Authorized
+                </div>
+                <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                  Law Enforcement
+                </p>
+                <h3 class="mt-3 text-2xl uppercase tracking-tight text-white" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                  Full Command
+                </h3>
+                <div class="my-8 border-y border-white/10 py-6">
+                  <span class="price text-5xl tracking-tight text-white" data-month="₹0" data-year="₹0" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                    ₹0
+                  </span>
+                  <span class="font-mono text-xs uppercase tracking-widest text-white/35">
+                    /always
+                  </span>
+                </div>
+                <ul class="space-y-4 text-sm text-white/75">
+                  <li class="flex gap-3">
+                    <iconify-icon icon="solar:check-circle-linear" class="text-[#00e5ff]" stroke-width="1.5"></iconify-icon>
+                    All Citizen features + status
+                  </li>
+                  <li class="flex gap-3">
+                    <iconify-icon icon="solar:check-circle-linear" class="text-[#00e5ff]" stroke-width="1.5"></iconify-icon>
+                    Geospatial crime hotspots
+                  </li>
+                  <li class="flex gap-3">
+                    <iconify-icon icon="solar:check-circle-linear" class="text-[#00e5ff]" stroke-width="1.5"></iconify-icon>
+                    Fraud network graph
+                  </li>
+                  <li class="flex gap-3">
+                    <iconify-icon icon="solar:check-circle-linear" class="text-[#00e5ff]" stroke-width="1.5"></iconify-icon>
+                    NCRP registry integration
+                  </li>
+                </ul>
+                <a href="#" onclick="openRegisterModal(); return false;" class="mt-10 inline-flex w-full items-center justify-center gap-2 bg-[#00e5ff] px-5 py-3.5 font-mono text-xs uppercase tracking-widest text-black transition-all duration-300 hover:bg-white hover:shadow-[0_0_24px_rgba(0,229,255,0.3)]">
+                  LEO Sign In
+                  <iconify-icon icon="solar:arrow-right-linear" class="text-base" stroke-width="1.5"></iconify-icon>
+                </a>
+              </div>
+
+              <div class="interactive group p-6 transition-all duration-500 hover:bg-white/[0.02] md:p-10">
+                <p class="font-mono text-xs uppercase tracking-widest text-white/40">
+                  Administrator
+                </p>
+                <h3 class="mt-3 text-2xl uppercase tracking-tight text-white" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                  Full Governance
+                </h3>
+                <div class="my-8 border-y border-white/10 py-6">
+                  <span class="text-5xl tracking-tight text-white" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">
+                    Registry Verify
+                  </span>
+                </div>
+                <ul class="space-y-4 text-sm text-white/60">
+                  <li class="flex gap-3">
+                    <iconify-icon icon="solar:check-circle-linear" class="text-[#00e5ff]" stroke-width="1.5"></iconify-icon>
+                    User Management & control
+                  </li>
+                  <li class="flex gap-3">
+                    <iconify-icon icon="solar:check-circle-linear" class="text-[#00e5ff]" stroke-width="1.5"></iconify-icon>
+                    Audit logs & analytics
+                  </li>
+                  <li class="flex gap-3">
+                    <iconify-icon icon="solar:check-circle-linear" class="text-[#00e5ff]" stroke-width="1.5"></iconify-icon>
+                    Registry Verify compliance rules
+                  </li>
+                  <li class="flex gap-3">
+                    <iconify-icon icon="solar:check-circle-linear" class="text-[#00e5ff]" stroke-width="1.5"></iconify-icon>
+                    API endpoints health monitor
+                  </li>
+                </ul>
+                <a href="#" onclick="openRegisterModal(); return false;" class="mt-10 inline-flex w-full items-center justify-center border border-white/10 px-5 py-3.5 font-mono text-xs uppercase tracking-widest text-white transition-all duration-300 hover:border-[#00e5ff]/50 hover:bg-[#00e5ff]/5 hover:text-[#00e5ff]">
+                  Admin Sign In
+                </a>
+              </div>
+            </div>
+          </section>
+
+          <section id="contact" class="relative border-b border-white/10 bg-[#080808]">
+            <span class="absolute left-0 top-0 h-6 w-6 border-l border-t border-[#00e5ff]/40"></span>
+            <span class="absolute right-0 top-0 h-6 w-6 border-r border-t border-[#00e5ff]/40"></span>
+
+            <div class="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr]">
+              <div class="border-b border-white/10 p-6 md:p-10 lg:border-b-0 lg:border-r lg:p-14">
+                <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                  // Submit Fraud Incident
+                </p>
+                <h2 class="reveal mt-5 text-4xl uppercase leading-none tracking-tight text-white md:text-5xl" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">File an Official Incident Report.</h2>
+                <p class="mt-7 max-w-md text-sm leading-relaxed text-white/50">
+                  Submit suspicious phone numbers, bank accounts, deepfakes, or UPI scams directly to the KAVACH AI dashboard. Incident reports are mapped instantly for police action.
+                </p>
+
+                <div class="mt-10 space-y-3">
+                  <div class="flex items-center gap-3 border border-white/10 bg-black/25 p-4">
+                    <iconify-icon icon="solar:letter-linear" class="text-xl text-[#00e5ff]" stroke-width="1.5"></iconify-icon>
+                    <span class="font-mono text-xs uppercase tracking-widest text-white/55">
+                      helpline@kavach.ai (1930)
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-3 border border-white/10 bg-black/25 p-4">
+                    <iconify-icon icon="solar:clock-circle-linear" class="text-xl text-[#00e5ff]" stroke-width="1.5"></iconify-icon>
+                    <span class="font-mono text-xs uppercase tracking-widest text-white/55">
+                      AI Analysis Under 2 Seconds
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <form class="p-6 md:p-10 lg:p-14" id="reportForm" onsubmit="submitReport(event)">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <label class="group block">
+                    <span class="font-mono text-xs uppercase tracking-widest text-white/40 transition-colors duration-300 group-focus-within:text-[#00e5ff]">
+                      Full Name
+                    </span>
+                    <input type="text" id="reportName" placeholder="Amit Kumar" required class="mt-2 w-full border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-white/20 focus:border-[#00e5ff]/60 focus:bg-[#00e5ff]/5">
+                  </label>
+                  <label class="group block">
+                    <span class="font-mono text-xs uppercase tracking-widest text-white/40 transition-colors duration-300 group-focus-within:text-[#00e5ff]">
+                      Email address
+                    </span>
+                    <input type="email" id="reportEmail" placeholder="your@email.com" required class="mt-2 w-full border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-white/20 focus:border-[#00e5ff]/60 focus:bg-[#00e5ff]/5">
+                  </label>
+                </div>
+
+                <label class="group mt-4 block">
+                  <span class="font-mono text-xs uppercase tracking-widest text-white/40 transition-colors duration-300 group-focus-within:text-[#00e5ff]">
+                    Fraud category
+                  </span>
+                  <select id="reportType" required class="mt-2 w-full appearance-none border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition-all duration-300 focus:border-[#00e5ff]/60 focus:bg-[#00e5ff]/5">
+                    <option value="" disabled selected>Select category...</option>
+                    <option value="upi_fraud">UPI Transaction Fraud</option>
+                    <option value="digital_arrest">Digital Arrest Threat</option>
+                    <option value="counterfeit_currency">Counterfeit Currency</option>
+                    <option value="deepfake">AI Image/Audio Deepfake</option>
+                    <option value="phishing">Phishing Link / SMS Call</option>
+                    <option value="other">Other Fraud incident</option>
+                  </select>
+                </label>
+
+                <label class="group mt-4 block">
+                  <span class="font-mono text-xs uppercase tracking-widest text-white/40 transition-colors duration-300 group-focus-within:text-[#00e5ff]">
+                    Incident Description
+                  </span>
+                  <textarea id="reportDesc" rows="6" placeholder="Describe suspicious telephone numbers, bank details, or event details..." required class="mt-2 w-full resize-none border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-white/20 focus:border-[#00e5ff]/60 focus:bg-[#00e5ff]/5"></textarea>
+                </label>
+
+                <button type="submit" class="interactive group mt-5 inline-flex w-full items-center justify-center gap-2 bg-[#00e5ff] px-6 py-3.5 font-mono text-xs uppercase tracking-widest text-black transition-all duration-300 hover:bg-white hover:shadow-[0_0_24px_rgba(0,229,255,0.3)]">
+                  Submit Incident Statement
+                  <iconify-icon icon="solar:arrow-right-linear" class="text-base transition-transform duration-300 group-hover:translate-x-1" stroke-width="1.5"></iconify-icon>
+                </button>
+              </form>
+            </div>
+          </section>
+        </main>
+
+        <footer class="bg-[#050505]">
+          <div class="relative border-b border-white/10 p-8 text-center md:p-14 lg:p-20">
+            <div class="absolute inset-0 pointer-events-none" style="background-image:radial-gradient(circle at 50% 100%,rgba(0,229,255,0.11),transparent 28rem);"></div>
+            <div class="relative">
+              <p class="font-mono text-xs uppercase tracking-widest text-[#00e5ff]">
+                // KAVACH AI is ready
+              </p>
+              <h2 class="reveal mx-auto mt-5 max-w-3xl text-4xl uppercase leading-none tracking-tight text-white md:text-6xl" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:300;">LAUNCH INDIA'S AI-POWERED SHIELD AGAINST DIGITAL CRIME.</h2>
+              <div class="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
+                <a href="#" onclick="openRegisterModal(); return false;" class="inline-flex items-center justify-center bg-white px-7 py-3.5 font-mono text-xs uppercase tracking-widest text-black transition-all duration-300 hover:bg-[#00e5ff] hover:shadow-[0_0_24px_rgba(0,229,255,0.28)]">
+                  Register Now
+                </a>
+                <a href="#" onclick="openRegisterModal(); return false;" class="inline-flex items-center justify-center border border-white/10 px-7 py-3.5 font-mono text-xs uppercase tracking-widest text-white transition-all duration-300 hover:border-[#00e5ff]/50 hover:bg-[#00e5ff]/5 hover:text-[#00e5ff]">
+                  Book Demo
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 border-b border-white/10 md:grid-cols-[1.1fr_0.9fr_0.9fr_0.9fr]">
+            <div class="border-b border-white/10 p-6 md:border-b-0 md:border-r md:p-8">
+              <div class="flex items-center gap-3">
+                <span class="flex h-8 w-8 items-center justify-center rounded border border-white/10 bg-black/40 text-[#00e5ff]">
+                  <iconify-icon icon="solar:stars-linear" class="text-lg" stroke-width="1.5"></iconify-icon>
+                </span>
+                <span class="font-mono text-xs uppercase tracking-tighter text-white">
+                  NOVI
+                </span>
+              </div>
+              <p class="mt-5 max-w-xs text-sm leading-relaxed text-white/40">
+                AI-powered digital safety infrastructure for India's citizens, law enforcement, and financial institutions.
+              </p>
+            </div>
+
+            <div class="border-b border-white/10 p-6 md:border-b-0 md:border-r md:p-8">
+              <p class="font-mono text-xs uppercase tracking-widest text-white">
+                Platform
+              </p>
+              <div class="mt-5 flex flex-col gap-3">
+                <a href="#features" class="font-mono text-xs uppercase tracking-widest text-white/35 transition-colors duration-300 hover:text-[#00e5ff]">
+                  AI Shield
+                </a>
+                <a href="#pricing" class="font-mono text-xs uppercase tracking-widest text-white/35 transition-colors duration-300 hover:text-[#00e5ff]">
+                  Access Tiers
+                </a>
+                <a href="#about" class="font-mono text-xs uppercase tracking-widest text-white/35 transition-colors duration-300 hover:text-[#00e5ff]">
+                  Helpline
+                </a>
+              </div>
+            </div>
+
+            <div class="border-b border-white/10 p-6 md:border-b-0 md:border-r md:p-8">
+              <p class="font-mono text-xs uppercase tracking-widest text-white">
+                Sources
+              </p>
+              <div class="mt-5 flex flex-col gap-3">
+                <a href="#" class="font-mono text-xs uppercase tracking-widest text-white/35 transition-colors duration-300 hover:text-[#00e5ff]">
+                  MHA / NCRP
+                </a>
+                <a href="#" class="font-mono text-xs uppercase tracking-widest text-white/35 transition-colors duration-300 hover:text-[#00e5ff]">
+                  Reserve Bank of India
+                </a>
+                <a href="#" class="font-mono text-xs uppercase tracking-widest text-white/35 transition-colors duration-300 hover:text-[#00e5ff]">
+                  cybercrime.gov.in
+                </a>
+              </div>
+            </div>
+
+            <div class="p-6 md:p-8">
+              <p class="font-mono text-xs uppercase tracking-widest text-white">
+                Legal
+              </p>
+              <div class="mt-5 flex flex-col gap-3">
+                <a href="#" onclick="openRegisterModal(); return false;" class="font-mono text-xs uppercase tracking-widest text-white/35 transition-colors duration-300 hover:text-[#00e5ff]">
+                  Contact Helpline
+                </a>
+                <a href="#" class="font-mono text-xs uppercase tracking-widest text-white/35 transition-colors duration-300 hover:text-[#00e5ff]">
+                  Terms of Use
+                </a>
+                <a href="#" class="font-mono text-xs uppercase tracking-widest text-white/35 transition-colors duration-300 hover:text-[#00e5ff]">
+                  Privacy Policy
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-col items-center justify-between gap-4 px-6 py-5 md:flex-row md:px-8">
+            <p class="text-xs text-white/30">
+              © 2026 KAVACH AI — ET AI Hackathon. All rights reserved.
+            </p>
+            <div class="flex gap-5">
+              <a href="#" class="text-xs text-white/30 transition-colors duration-300 hover:text-white/60">
+                Privacy
+              </a>
+              <a href="#" class="text-xs text-white/30 transition-colors duration-300 hover:text-white/60">
+                Terms
+              </a>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.Lenis) {
+          const lenis = new Lenis({
+            duration: 1.15,
+            smoothWheel: true,
+            wheelMultiplier: 0.85,
+            touchMultiplier: 1.2
+          });
+
+          function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+          }
+
+          requestAnimationFrame(raf);
+
+          document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
+            anchor.addEventListener('click', function (event) {
+              const target = document.querySelector(anchor.getAttribute('href'));
+              if (target) {
+                event.preventDefault();
+                lenis.scrollTo(target, { offset: -72 });
+              }
+            });
+          });
+        }
+
+        if (window.gsap && window.ScrollTrigger) {
+          gsap.registerPlugin(ScrollTrigger);
+
+          document.querySelectorAll('.reveal').forEach(function (element) {
+            const words = element.textContent.trim().split(/\s+/);
+            element.innerHTML = words.map(function (word) {
+              return '<span style="display:inline-block;overflow:hidden;vertical-align:top;"><span style="display:inline-block;transform:translateY(110%);">' + word + '&nbsp;</span></span>';
+            }).join('');
+
+            gsap.to(element.querySelectorAll('span span'), {
+              y: 0,
+              duration: 1,
+              ease: 'power4.out',
+              stagger: 0.045,
+              scrollTrigger: {
+                trigger: element,
+                start: 'top 82%',
+                once: true
+              }
+            });
+          });
+
+          gsap.fromTo('.interactive', {
+            y: 18,
+            opacity: 0
+          }, {
+            y: 0,
+            opacity: 1,
+            duration: 0.8,
+            ease: 'power3.out',
+            stagger: 0.06,
+            scrollTrigger: {
+              trigger: 'body',
+              start: 'top 70%',
+              once: true
+            }
+          });
+        }
+
+        document.querySelectorAll('.interactive, a, button, input, textarea, select').forEach(function (item) {
+          item.addEventListener('mouseenter', function () {
+            item.style.transform = item.tagName === 'INPUT' || item.tagName === 'TEXTAREA' || item.tagName === 'SELECT' ? 'translateY(0)' : 'translateY(-2px)';
+          });
+          item.addEventListener('mouseleave', function () {
+            item.style.transform = 'translateY(0)';
+          });
+        });
+
+        const toggle = document.getElementById('billingToggle');
+        const knob = document.getElementById('billingKnob');
+        let annual = true;
+
+        if (toggle && knob) {
+          toggle.addEventListener('click', function () {
+            annual = !annual;
+            toggle.classList.toggle('bg-[#00e5ff]', annual);
+            toggle.classList.toggle('bg-white/10', !annual);
+            knob.style.right = annual ? '0.125rem' : '1.375rem';
+            knob.style.background = annual ? '#000000' : '#ffffff';
+
+            document.querySelectorAll('.price').forEach(function (price) {
+              price.textContent = annual ? price.dataset.year : price.dataset.month;
+            });
+          });
+        }
+      });
+    </script>
+
+    
+  
+<script data-aura-video-controller="true">
+(function () {
+  function playVideo(video) {
+    var promise = video.play();
+    if (promise && typeof promise.catch === "function") {
+      promise.catch(function () {});
+    }
+  }
+
+  function setupVideo(video) {
+    if (video.__auraVideoReady === true) return;
+    video.__auraVideoReady = true;
+    video.removeAttribute("data-aura-video-ready");
+    video.removeAttribute("data-aura-video-played");
+    video.muted = true;
+    video.playsInline = true;
+
+    var preset = video.dataset.auraVideoPreset || "loop-in-view";
+    if (preset === "hover") {
+      video.addEventListener("mouseenter", function () {
+        playVideo(video);
+      });
+      video.addEventListener("mouseleave", function () {
+        video.pause();
+        video.currentTime = 0;
+      });
+      return;
+    }
+
+    if (!("IntersectionObserver" in window)) {
+      playVideo(video);
+      return;
+    }
+
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          if (preset === "play-once" && video.__auraVideoPlayed === true) {
+            return;
+          }
+          playVideo(video);
+        } else {
+          video.pause();
+        }
+      });
+    }, { threshold: 0.35 });
+
+    if (preset === "play-once") {
+      video.addEventListener("ended", function () {
+        video.__auraVideoPlayed = true;
+      }, { once: true });
+    }
+
+    observer.observe(video);
+  }
+
+  function setupVideos() {
+    document
+      .querySelectorAll("video[data-aura-video-preset]")
+      .forEach(setupVideo);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupVideos);
+  } else {
+    setupVideos();
+  }
+})();</script>
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/80 backdrop-blur-md transition-all duration-300">
+      <div class="relative w-full max-w-md border border-white/10 bg-[#0a0a0a] p-8 shadow-2xl">
+        <span class="absolute left-0 top-0 h-4 w-4 border-l border-t border-[#00e5ff]/40"></span>
+        <span class="absolute right-0 top-0 h-4 w-4 border-r border-t border-[#00e5ff]/40"></span>
+        <span class="absolute bottom-0 left-0 h-4 w-4 border-l border-b border-[#00e5ff]/40"></span>
+        <span class="absolute bottom-0 right-0 h-4 w-4 border-r border-b border-[#00e5ff]/40"></span>
+        
+        <button onclick="closeModals()" class="absolute right-4 top-4 font-mono text-sm text-white/40 transition-colors hover:text-white">✕</button>
+        <h3 class="font-mono text-lg uppercase tracking-widest text-[#00e5ff]">// Welcome Back</h3>
+        <p class="mt-2 text-xs text-white/50">Login to access KAVACH AI Command Platform.</p>
+        <div id="loginError" class="mt-4 hidden border border-red-500/30 bg-red-500/10 p-3 font-mono text-xs text-red-400"></div>
+        <form onsubmit="handleLogin(event)" class="mt-6 space-y-4">
+          <label class="block">
+            <span class="font-mono text-[10px] uppercase tracking-wider text-white/40">Email</span>
+            <input type="email" id="loginEmail" placeholder="your@email.com" required class="mt-2 w-full border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-white/20 focus:border-[#00e5ff]/60 focus:bg-[#00e5ff]/5">
+          </label>
+          <label class="block">
+            <span class="font-mono text-[10px] uppercase tracking-wider text-white/40">Password</span>
+            <input type="password" id="loginPassword" placeholder="••••••••" required class="mt-2 w-full border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-white/20 focus:border-[#00e5ff]/60 focus:bg-[#00e5ff]/5">
+          </label>
+          <button type="submit" id="loginSubmitBtn" class="group flex w-full items-center justify-center gap-4 bg-[#00e5ff] py-3.5 font-mono text-xs text-black transition-all duration-300 hover:bg-white hover:shadow-[0_0_24px_rgba(0,229,255,0.35)]">
+            Login
+            <iconify-icon icon="solar:arrow-right-linear" class="text-base transition-transform duration-300 group-hover:translate-x-1" stroke-width="1.5"></iconify-icon>
+          </button>
+        </form>
+        <p class="mt-6 text-center text-xs text-white/45">Don't have an account? <a href="#" onclick="switchToRegister(event)" class="text-[#00e5ff] hover:underline">Register</a></p>
+      </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/80 backdrop-blur-md transition-all duration-300">
+      <div class="relative w-full max-w-md border border-white/10 bg-[#0a0a0a] p-8 shadow-2xl">
+        <span class="absolute left-0 top-0 h-4 w-4 border-l border-t border-[#00e5ff]/40"></span>
+        <span class="absolute right-0 top-0 h-4 w-4 border-r border-t border-[#00e5ff]/40"></span>
+        <span class="absolute bottom-0 left-0 h-4 w-4 border-l border-b border-[#00e5ff]/40"></span>
+        <span class="absolute bottom-0 right-0 h-4 w-4 border-r border-b border-[#00e5ff]/40"></span>
+
+        <button onclick="closeModals()" class="absolute right-4 top-4 font-mono text-sm text-white/40 transition-colors hover:text-white">✕</button>
+        <h3 class="font-mono text-lg uppercase tracking-widest text-[#00e5ff]">// Create Account</h3>
+        <p class="mt-2 text-xs text-white/50">Register to check alerts, deepfakes, and file incidents.</p>
+        <div id="registerError" class="mt-4 hidden border border-red-500/30 bg-red-500/10 p-3 font-mono text-xs text-red-400"></div>
+        <form onsubmit="handleRegister(event)" class="mt-6 space-y-4">
+          <label class="block">
+            <span class="font-mono text-[10px] uppercase tracking-wider text-white/40">Full Name</span>
+            <input type="text" id="regName" placeholder="Amit Kumar" required class="mt-2 w-full border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-white/20 focus:border-[#00e5ff]/60 focus:bg-[#00e5ff]/5">
+          </label>
+          <label class="block">
+            <span class="font-mono text-[10px] uppercase tracking-wider text-white/40">Email</span>
+            <input type="email" id="regEmail" placeholder="your@email.com" required class="mt-2 w-full border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-white/20 focus:border-[#00e5ff]/60 focus:bg-[#00e5ff]/5">
+          </label>
+          <label class="block">
+            <span class="font-mono text-[10px] uppercase tracking-wider text-white/40">Phone Number</span>
+            <input type="tel" id="regPhone" placeholder="+919876543210" class="mt-2 w-full border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-white/20 focus:border-[#00e5ff]/60 focus:bg-[#00e5ff]/5">
+          </label>
+          <label class="block">
+            <span class="font-mono text-[10px] uppercase tracking-wider text-white/40">Password</span>
+            <input type="password" id="regPassword" placeholder="Min 8 characters" required minlength="8" class="mt-2 w-full border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-white/20 focus:border-[#00e5ff]/60 focus:bg-[#00e5ff]/5">
+          </label>
+          <button type="submit" id="regSubmitBtn" class="group flex w-full items-center justify-center gap-4 bg-[#00e5ff] py-3.5 font-mono text-xs text-black transition-all duration-300 hover:bg-white hover:shadow-[0_0_24px_rgba(0,229,255,0.35)]">
+            Register
+            <iconify-icon icon="solar:arrow-right-linear" class="text-base transition-transform duration-300 group-hover:translate-x-1" stroke-width="1.5"></iconify-icon>
+          </button>
+        </form>
+        <p class="mt-6 text-center text-xs text-white/45">Already have an account? <a href="#" onclick="switchToLogin(event)" class="text-[#00e5ff] hover:underline">Login</a></p>
+      </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed top-20 right-6 z-[200] flex flex-col gap-3"></div>
+
+    <script src="app.js"></script>
+
+</body></html>
