@@ -36,8 +36,10 @@ function setupUserInformation() {
 
   if (role === 'citizen') {
     document.getElementById('casesNavText').textContent = 'My Reports';
-  } else {
+  } else if (role === 'leo') {
     document.getElementById('casesNavText').textContent = 'Cases Pipeline';
+  } else if (role === 'admin') {
+    document.getElementById('casesNavText').textContent = 'Admin panel';
   }
 }
 
@@ -59,9 +61,15 @@ function applyRoleVisibility() {
   if (role === 'citizen') {
     document.getElementById('view-citizen-reports').style.display = 'block';
     document.getElementById('view-leo-cases').style.display = 'none';
-  } else {
+    if (document.getElementById('view-admin-panel')) document.getElementById('view-admin-panel').style.display = 'none';
+  } else if (role === 'leo') {
     document.getElementById('view-citizen-reports').style.display = 'none';
     document.getElementById('view-leo-cases').style.display = 'block';
+    if (document.getElementById('view-admin-panel')) document.getElementById('view-admin-panel').style.display = 'none';
+  } else if (role === 'admin') {
+    document.getElementById('view-citizen-reports').style.display = 'none';
+    document.getElementById('view-leo-cases').style.display = 'none';
+    if (document.getElementById('view-admin-panel')) document.getElementById('view-admin-panel').style.display = 'block';
   }
 }
 
@@ -98,8 +106,10 @@ function switchTab(tabId) {
   } else if (tabId === 'reports') {
     if (role === 'citizen') {
       loadCitizenReports();
-    } else {
+    } else if (role === 'leo') {
       loadLeoCases();
+    } else if (role === 'admin') {
+      loadAdminPanel();
     }
   }
 
@@ -109,7 +119,10 @@ function switchTab(tabId) {
     'scan-center': { main: 'AI Safeshield Scans', sub: 'Interactive forensic scan engines' },
     'rag-advisory': { main: 'Official Advisories', sub: 'RAG search matching public law briefs' },
     analytics: { main: 'Threat Intel & Analytics', sub: 'Geospatial crime mapping and mule account transaction node trails' },
-    reports: { main: role === 'citizen' ? 'Incident Reports' : 'Law Enforcement Cases', sub: role === 'citizen' ? 'My filed safety reports' : 'National Crime Registry validation workflow' }
+    reports: {
+      main: role === 'admin' ? 'Administration Setting Center' : (role === 'citizen' ? 'Incident Reports' : 'Law Enforcement Cases'),
+      sub: role === 'admin' ? 'Global database governance, user access controls, and diagnostics' : (role === 'citizen' ? 'My filed safety reports' : 'National Crime Registry validation workflow')
+    }
   };
 
   document.getElementById('pageTitle').textContent = titles[tabId].main;
@@ -959,4 +972,180 @@ function showToast(message, type = 'success') {
     toast.classList.remove('show');
     setTimeout(() => toast.remove(), 400);
   }, 4500);
+}
+
+// ── ADMIN PANEL LOGIC ─────────────────────────────────────────
+async function loadAdminPanel() {
+  const usersBody = document.getElementById('adminUsersTableBody');
+  const dlogsList = document.getElementById('adminAuditLogs');
+  const healthList = document.getElementById('adminHealthDiagnostics');
+  
+  if (usersBody) usersBody.innerHTML = '<tr><td colspan="5"><div class="loading-spinner"></div></td></tr>';
+  if (dlogsList) dlogsList.innerHTML = '<div class="loading-spinner"></div>';
+  if (healthList) healthList.innerHTML = '<div class="loading-spinner"></div>';
+
+  try {
+    // 1. Fetch Users
+    const uPayload = await callBackend('/api/v1/admin/users', 'GET');
+    const users = uPayload.users || [];
+    document.getElementById('admin-user-count').textContent = uPayload.total || users.length;
+    
+    if (usersBody) {
+      if (users.length === 0) {
+        usersBody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:16px;">No registered platform users found.</td></tr>';
+      } else {
+        usersBody.innerHTML = '';
+        users.forEach(u => {
+          const verifiedBadge = u.is_verified 
+            ? `<span style="color:var(--cyan);font-family:var(--font-mono);font-size:10px;">[VERIFIED]</span>` 
+            : `<span style="color:var(--text-muted);font-family:var(--font-mono);font-size:10px;">[UNVERIFIED]</span>`;
+            
+          const activeLabel = u.is_active
+            ? `<span style="color:#00ff88;">Active</span>`
+            : `<span style="color:#ff3b3f;">Suspended</span>`;
+
+          const tr = document.createElement('tr');
+          tr.style.borderBottom = '1px solid rgba(0, 229, 255, 0.06)';
+          tr.innerHTML = `
+            <td style="padding: 10px 8px;">
+              <span style="font-weight:600;display:block;">${u.full_name}</span>
+              ${verifiedBadge}
+            </td>
+            <td style="padding: 10px 8px;" class="mono-td">${u.email}</td>
+            <td style="padding: 10px 8px;">
+              <select onchange="adminUpdateUserRole('${u.id}', this.value)" style="background:rgba(0,0,0,0.3);color:#fff;border:1px solid var(--border);padding:4px;font-size:11px;font-family:var(--font-mono);outline:none;cursor:pointer;">
+                <option value="citizen" ${u.role === 'citizen' ? 'selected' : ''}>CITIZEN</option>
+                <option value="leo" ${u.role === 'leo' ? 'selected' : ''}>LEO</option>
+                <option value="analyst" ${u.role === 'analyst' ? 'selected' : ''}>ANALYST</option>
+                <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>ADMIN</option>
+              </select>
+            </td>
+            <td style="padding: 10px 8px;">${activeLabel}</td>
+            <td style="padding: 10px 8px;">
+              <button onclick="adminToggleUserStatus('${u.id}', ${u.is_active})" class="btn-outline btn-xs" style="padding:4px 8px;font-size:10px;font-family:var(--font-mono);">
+                ${u.is_active ? 'Suspend' : 'Activate'}
+              </button>
+            </td>
+          `;
+          usersBody.appendChild(tr);
+        });
+      }
+    }
+  } catch (err) {
+    if (usersBody) usersBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#ff3b3f;">Failed to load user directory: ${err.message}</td></tr>`;
+  }
+
+  try {
+    // 2. Fetch System Health
+    const health = await callBackend('/api/v1/admin/system-health', 'GET');
+    if (healthList) {
+      const dbStatusColor = health.database === 'healthy' ? '#00ff88' : '#ff3b3f';
+      const statusColor = health.status === 'operational' ? '#00e5ff' : '#ff9f00';
+      
+      healthList.innerHTML = `
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);">
+          <span>Database Integrity:</span>
+          <span style="color:${dbStatusColor};font-weight:700;">${health.database.toUpperCase()}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);">
+          <span>Shield Core API:</span>
+          <span style="color:${statusColor};font-weight:700;">${health.status.toUpperCase()}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);">
+          <span>Global Version:</span>
+          <span class="mono">${health.version}</span>
+        </div>
+        <div style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-top:10px;margin-bottom:4px;">AI COGNITIVE MODULES:</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:10px;margin-top:4px;">
+          ${Object.entries(health.ai_engines || {}).map(([engine, state]) => `
+            <div style="background:rgba(255,255,255,0.02);padding:6px 4px;border:1px solid rgba(0,229,255,0.05);text-align:center;border-radius:2px;">
+              <span style="display:block;color:var(--text-secondary);text-transform:capitalize;font-size:9px;margin-bottom:2px;">${engine.replace('_', ' ')}</span>
+              <span style="color:#00ff88;font-weight:600;font-size:9px;">${state.toUpperCase()}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+  } catch (err) {
+    if (healthList) healthList.innerHTML = `<div style="color:#ff3b3f;font-size:12px;">Failed to fetch system diagnostics.</div>`;
+  }
+
+  try {
+    // 3. Fetch Audit Logs
+    const auditData = await callBackend('/api/v1/admin/audit-logs', 'GET');
+    const logs = auditData.logs || [];
+    if (dlogsList) {
+      if (logs.length === 0) {
+        dlogsList.innerHTML = '<div style="color:var(--text-muted);padding:8px;">No audit sequence parsed.</div>';
+      } else {
+        dlogsList.innerHTML = '';
+        logs.forEach(log => {
+          const timestamp = new Date(log.created_at).toLocaleTimeString();
+          const resId = log.resource_id ? `${log.resource_id.substring(0, 8)}...` : 'N/A';
+          const dItem = document.createElement('div');
+          dItem.style.background = 'rgba(255,255,255,0.01)';
+          dItem.style.padding = '8px';
+          dItem.style.border = '1px solid rgba(0,229,255,0.04)';
+          dItem.style.borderRadius = '3px';
+          dItem.style.marginBottom = '6px';
+          dItem.innerHTML = `
+            <div style="display:flex;justify-content:space-between;color:var(--cyan);font-weight:500;">
+              <span>[${log.action.toUpperCase()}]</span>
+              <span style="color:var(--text-muted);">${timestamp}</span>
+            </div>
+            <div style="color:var(--text-secondary);margin-top:2px;">Resource: ${log.resource} (${resId})</div>
+            <div style="color:var(--text-muted);font-size:10px;margin-top:2px;">Details: ${log.details}</div>
+          `;
+          dlogsList.appendChild(dItem);
+        });
+      }
+    }
+  } catch (err) {
+    if (dlogsList) dlogsList.innerHTML = `<div style="color:#ff3b3f;">Failed to retrieve audit trail.</div>`;
+  }
+}
+
+async function adminUpdateUserRole(userId, newRole) {
+  try {
+    await callBackend(`/api/v1/admin/users/${userId}`, 'PUT', { role: newRole });
+    showToast(`User role successfully changed to ${newRole.toUpperCase()}!`, 'success');
+    loadAdminPanel();
+  } catch (err) {
+    showToast(`Failed to update user role: ${err.message}`, 'error');
+  }
+}
+
+async function adminToggleUserStatus(userId, currentStatus) {
+  try {
+    await callBackend(`/api/v1/admin/users/${userId}`, 'PUT', { is_active: !currentStatus });
+    showToast(`User account status modified successfully!`, 'success');
+    loadAdminPanel();
+  } catch (err) {
+    showToast(`Failed to toggle account status: ${err.message}`, 'error');
+  }
+}
+
+async function adminSendBroadcast(e) {
+  e.preventDefault();
+  const phoneVal = document.getElementById('adminBroadcastPhone').value.trim();
+  const messageVal = document.getElementById('adminBroadcastMsg').value.trim();
+  const submitBtn = document.getElementById('btnAdminBroadcast');
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Configuring delivery...';
+
+  try {
+    const payload = { message: messageVal };
+    if (phoneVal) payload.phone_number = phoneVal;
+
+    const res = await callBackend('/api/v1/alerts/test-sms', 'POST', payload);
+    showToast(`Mock SMS broadcast alert queued to ${res.recipient}!`, 'success');
+    document.getElementById('adminBroadcastMsg').value = '';
+    loadAdminPanel();
+  } catch (err) {
+    showToast(`SMS delivery failed: ${err.message}`, 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Dispatch Custom SMS Alert →';
+  }
 }

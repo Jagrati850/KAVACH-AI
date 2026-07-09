@@ -433,8 +433,8 @@
             </div>
           </div>
 
-          <!-- LEO / Admin view: Case Management List -->
-          <div id="view-leo-cases" class="LEO-only ADMIN-only" style="display:none;">
+          <!-- LEO view: Case Management List -->
+          <div id="view-leo-cases" class="LEO-only" style="display:none;">
             <div class="dashboard-card">
               <div class="card-header">
                 <h3>Case Management Pipeline</h3>
@@ -460,6 +460,100 @@
               </div>
             </div>
           </div>
+
+          <!-- ADMIN view: Platform Administration Panel -->
+          <div id="view-admin-panel" class="ADMIN-only" style="display:none;">
+            <div class="dashboard-grid">
+              
+              <!-- Welcome Admin Panel & System Stats Card -->
+              <div class="dashboard-card col-span-2">
+                <div class="card-header">
+                  <h3>Platform Status & User Metrics</h3>
+                  <span class="tag">// System Overview</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px;">
+                  <div style="background: rgba(255,255,255,0.03); padding: 16px; border: 1px solid var(--border); border-radius: 4px;">
+                    <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); margin-bottom: 4px;">REGISTERED USERS</div>
+                    <div id="admin-user-count" style="font-size: 24px; font-weight: 700; color: var(--cyan); font-family: var(--font-mono);">--</div>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.03); padding: 16px; border: 1px solid var(--border); border-radius: 4px;">
+                    <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); margin-bottom: 4px;">ACTIVE SESSIONS</div>
+                    <div style="font-size: 24px; font-weight: 700; color: var(--cyan); font-family: var(--font-mono);">12 Active</div>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.03); padding: 16px; border: 1px solid var(--border); border-radius: 4px;">
+                    <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); margin-bottom: 4px;">DISPATCH RATE</div>
+                    <div style="font-size: 24px; font-weight: 700; color: var(--cyan); font-family: var(--font-mono);">100% OK</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- System Health Check Card -->
+              <div class="dashboard-card">
+                <div class="card-header">
+                  <h3>Shield Engine Diagnostics</h3>
+                  <span class="tag">// API & DB Health Status</span>
+                </div>
+                <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px;" id="adminHealthDiagnostics">
+                  <div class="loading-spinner"></div>
+                </div>
+              </div>
+
+              <!-- User Management Card -->
+              <div class="dashboard-card col-span-3">
+                <div class="card-header" style="justify-content: space-between; display: flex; align-items: center;">
+                  <h3>User Directory & Registration Panel</h3>
+                  <span class="tag">// Access Level Permissions</span>
+                </div>
+                <div class="cases-table-wrapper" style="margin-top: 16px; border-top: 1px solid var(--border); overflow-x: auto;">
+                  <table class="cases-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                      <tr style="border-bottom: 1.5px solid var(--border); color: var(--text-muted);">
+                        <th style="padding: 12px 8px;">Name & Verification</th>
+                        <th style="padding: 12px 8px;">Email Address</th>
+                        <th style="padding: 12px 8px;">User Role</th>
+                        <th style="padding: 12px 8px;">Account Status</th>
+                        <th style="padding: 12px 8px;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="adminUsersTableBody">
+                      <tr><td colspan="5"><div class="loading-spinner"></div></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Broadcast Custom Mock SMS Card -->
+              <div class="dashboard-card col-span-2">
+                <div class="card-header">
+                  <h3>Dispatch System SMS Alert</h3>
+                  <span class="tag">// Outbound Notification Broadcast</span>
+                </div>
+                <form id="adminBroadcastForm" onsubmit="adminSendBroadcast(event)" style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px;">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size: 11px; font-family: var(--font-mono); color: var(--text-secondary); display: block; margin-bottom: 4px;">RECIPIENT MOBILE NUMBER</label>
+                    <input type="text" class="form-input" id="adminBroadcastPhone" placeholder="+919876543210 (Defaults to settings.test_phone_number)" style="background: rgba(0,0,0,0.25); color: #fff; border: 1px solid var(--border); padding: 8px; font-size: 13px; width: 100%;" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size: 11px; font-family: var(--font-mono); color: var(--text-secondary); display: block; margin-bottom: 4px;">OUTBOUND SMS MESSAGE BODY</label>
+                    <textarea class="form-textarea" id="adminBroadcastMsg" placeholder="Type custom threat alert warning notification to display in the uvicorn logs here..." required style="background: rgba(0,0,0,0.25); color: #fff; border: 1px solid var(--border); padding: 8px; font-size: 13px; height: 80px; width: 100%; border-radius: 4px; box-sizing: border-box;"></textarea>
+                  </div>
+                  <button type="submit" class="btn-primary" id="btnAdminBroadcast" style="padding: 12px; font-size: 11px; font-family: var(--font-mono); text-transform: uppercase;">Dispatch Custom SMS Alert →</button>
+                </form>
+              </div>
+
+              <!-- Audit Trail Card -->
+              <div class="dashboard-card col-span-1">
+                <div class="card-header">
+                  <h3>System Audit logs</h3>
+                  <span class="tag">// Recent Operator Activities</span>
+                </div>
+                <div style="margin-top: 16px; max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-family: var(--font-mono); font-size: 11px;" id="adminAuditLogs">
+                  <div class="loading-spinner"></div>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </div>
       </div>
 
@@ -471,7 +565,7 @@
 
   <!-- Leaflet Map JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="app.js"></script>
-  <script src="dashboard.js"></script>
+  <script src="app.js?v=2000"></script>
+  <script src="dashboard.js?v=2000"></script>
 </body>
 </html>
