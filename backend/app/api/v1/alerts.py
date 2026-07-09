@@ -129,3 +129,54 @@ async def mark_all_notifications_read(
     await db.flush()
 
     return {"message": "All notifications marked as read"}
+
+
+from pydantic import BaseModel, Field
+
+class TestSMSRequest(BaseModel):
+    phone_number: str | None = Field(None, description="Recipient phone number (defaults to settings.test_phone_number or current user's phone)")
+    message: str = Field("KAVACH AI SMS System Test: Digital Safety Shield active.", description="Sample text body")
+    template_id: str | None = Field(None, description="Optional Template ID override")
+    variables: dict[str, str] | None = Field(None, description="Optional flow variables")
+
+@router.post("/test-sms")
+async def send_test_sms(
+    payload: TestSMSRequest,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Sends a test SMS alert through the generic Notification Service.
+    """
+    from app.services.sms import get_notification_service
+    from app.config import get_settings
+
+    settings = get_settings()
+    notif_service = get_notification_service()
+
+    # Target: payload -> settings.test_phone_number -> current logged in user phone number
+    target_phone = payload.phone_number or settings.test_phone_number or current_user.phone
+
+    if not target_phone:
+        raise HTTPException(
+            status_code=400,
+            detail="SMS Dispatch Error: No recipient phone number supplied or found in user details."
+        )
+
+    success = await notif_service.send_custom_alert(
+        phone=target_phone,
+        message=payload.message
+    )
+
+    if not success:
+        raise HTTPException(
+            status_code=500,
+            detail=f"SMS Delivery failed."
+        )
+
+    return {
+        "success": True,
+        "recipient": target_phone,
+        "provider": settings.sms_provider,
+        "message": "SMS alert processed by Notification Service successfully."
+    }

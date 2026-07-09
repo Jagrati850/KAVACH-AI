@@ -58,6 +58,16 @@ class Settings(BaseSettings):
     # ── RAG Module ──────────────────────────────────────
     rag_enabled: bool = True
 
+    # ── SMS Configuration ──────────────────────────────
+    sms_provider: str = "mock"
+    msg91_auth_key: str | None = None
+    msg91_sender_id: str = "KAVACH"
+    msg91_template_id: str | None = None
+    twilio_account_sid: str | None = None
+    twilio_auth_token: str | None = None
+    twilio_phone_number: str | None = None
+    test_phone_number: str | None = None
+
     # ── Logging ─────────────────────────────────────────
     log_level: str = "DEBUG"
     log_file: str = "./logs/kavach.log"

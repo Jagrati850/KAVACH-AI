@@ -46,6 +46,8 @@ async def create_report(
         city=payload.city,
         state=payload.state,
         incident_date=payload.incident_date,
+        severity=Severity.MEDIUM,
+        status=ReportStatus.SUBMITTED,
     )
 
     # Auto-analyze the report description for threat scoring
@@ -75,7 +77,44 @@ async def create_report(
     db.add(report)
     await db.flush()
 
-    return ReportResponse.model_validate(report)
+    report_dict = {
+        "id": report.id,
+        "user_id": report.user_id,
+        "report_type": report.report_type.value if hasattr(report.report_type, "value") else str(report.report_type),
+        "title": report.title,
+        "description": report.description,
+        "status": report.status.value if hasattr(report.status, "value") else str(report.status),
+        "severity": report.severity.value if hasattr(report.severity, "value") else str(report.severity),
+        "suspect_phone": report.suspect_phone,
+        "suspect_name": report.suspect_name,
+        "suspect_account": report.suspect_account,
+        "amount_lost": report.amount_lost,
+        "latitude": report.latitude,
+        "longitude": report.longitude,
+        "city": report.city,
+        "state": report.state,
+        "ai_analysis": report.ai_analysis,
+        "ai_threat_score": report.ai_threat_score,
+        "incident_date": report.incident_date,
+        "created_at": report.created_at,
+        "updated_at": report.updated_at,
+        "evidence": []
+    }
+    res_data = ReportResponse.model_validate(report_dict)
+
+    # Automatically notify client of new report filing via generic Notification Service
+    try:
+        from app.services.sms import get_notification_service
+        notif_service = get_notification_service()
+        recipient_phone = current_user.phone or "+919876543210"
+        await notif_service.send_custom_alert(
+            phone=recipient_phone,
+            message=f"KAVACH ALERT: scam report successfully submitted. Case ID: {report.id}. Severity tier: {report.severity.value.upper()}."
+        )
+    except Exception:
+        pass
+
+    return res_data
 
 
 @router.get("/", response_model=ReportListResponse)
@@ -190,4 +229,65 @@ async def update_report(
             report.description = payload.description
 
     await db.flush()
-    return ReportResponse.model_validate(report)
+
+    # Map any existing evidence safe from lazy queries
+    evidence_list = []
+    try:
+        for ev in (report.evidence or []):
+            evidence_list.append({
+                "id": ev.id,
+                "file_name": ev.file_name,
+                "file_type": ev.file_type,
+                "file_size": ev.file_size,
+                "uploaded_at": ev.uploaded_at
+            })
+    except Exception:
+        pass
+
+    report_dict = {
+        "id": report.id,
+        "user_id": report.user_id,
+        "report_type": report.report_type.value if hasattr(report.report_type, "value") else str(report.report_type),
+        "title": report.title,
+        "description": report.description,
+        "status": report.status.value if hasattr(report.status, "value") else str(report.status),
+        "severity": report.severity.value if hasattr(report.severity, "value") else str(report.severity),
+        "suspect_phone": report.suspect_phone,
+        "suspect_name": report.suspect_name,
+        "suspect_account": report.suspect_account,
+        "amount_lost": report.amount_lost,
+        "latitude": report.latitude,
+        "longitude": report.longitude,
+        "city": report.city,
+        "state": report.state,
+        "ai_analysis": report.ai_analysis,
+        "ai_threat_score": report.ai_threat_score,
+        "incident_date": report.incident_date,
+        "created_at": report.created_at,
+        "updated_at": report.updated_at,
+        "evidence": evidence_list
+    }
+    res_data = ReportResponse.model_validate(report_dict)
+
+    # Automatically notify client of investigation status update via generic Notification Service
+    try:
+        from app.services.sms import get_notification_service
+        from app.models.user import User
+        
+        recipient_phone = current_user.phone or "+919876543210"
+        if report.user_id != current_user.id:
+            res_user = await db.execute(select(User).where(User.id == report.user_id))
+            owner_user = res_user.scalar_one_or_none()
+            if owner_user and owner_user.phone:
+                recipient_phone = owner_user.phone
+                
+        notif_service = get_notification_service()
+        await notif_service.notify_report_update(
+            phone=recipient_phone,
+            case_id=report.id,
+            status=report.status.value.upper()
+        )
+    except Exception:
+        pass
+
+    return res_data
