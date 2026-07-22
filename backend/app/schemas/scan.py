@@ -92,6 +92,15 @@ class ScanResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ScamCallAudioResponse(ScanResponse):
+    """Scan response for uploaded call audio, including the auto-generated transcript."""
+    transcript: str
+    detected_language: Optional[str] = None
+    language_probability: Optional[float] = None
+    audio_duration_seconds: Optional[float] = None
+    case_number: Optional[str] = None
+
+
 class ScanHistoryResponse(BaseModel):
     """Paginated scan history."""
     scans: List[ScanResponse]

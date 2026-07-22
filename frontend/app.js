@@ -3,7 +3,7 @@
    Backend Integration · JWT Auth · API Calls · UI Controllers
    ═══════════════════════════════════════════════════════════════ */
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = (window.location.protocol.startsWith('http')) ? window.location.origin : 'http://127.0.0.1:8000';
 
 // ── State ────────────────────────────────────────────────────
 let authToken = localStorage.getItem('jwt_token') || null;

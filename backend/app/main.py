@@ -129,3 +129,6 @@ async def health_check():
             "geospatial_intelligence",
         ],
     }
+
+from fastapi.staticfiles import StaticFiles
+app.mount("/frontend", StaticFiles(directory="c:\\Users\\gupta\\OneDrive\\Desktop\\Documents\\BLL\\frontend", html=True), name="frontend")

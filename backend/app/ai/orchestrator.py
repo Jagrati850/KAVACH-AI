@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional
 from app.ai.scam_detector.engine import ScamDetectorEngine
 from app.ai.currency_detector.engine import CurrencyDetectorEngine
 from app.ai.deepfake_detector.engine import DeepfakeDetectorEngine
+from app.ai.call_scam_classifier import CallScamClassifier
 
 
 class AIOrchestrator:
@@ -32,6 +33,24 @@ class AIOrchestrator:
         self.scam_engine = ScamDetectorEngine()
         self.currency_engine = CurrencyDetectorEngine()
         self.deepfake_engine = DeepfakeDetectorEngine()
+        self.call_scam_classifier = CallScamClassifier()
+
+    async def analyze_call_transcript(
+        self,
+        transcript: str,
+        language: str = "auto",
+        context: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Route call transcripts to the trained ML Call Scam Classifier
+        (15-category TF-IDF + LogisticRegression model). Used by the
+        Call Transcripts scan endpoints only.
+        """
+        return await self.call_scam_classifier.analyze(
+            transcript=transcript,
+            language=language,
+            context=context,
+        )
 
     async def analyze_scam_text(
         self,

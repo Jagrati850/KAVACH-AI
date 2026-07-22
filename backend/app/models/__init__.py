@@ -8,6 +8,7 @@ from app.models.alert import Alert, Notification
 from app.models.audit import AuditLog
 from app.models.threat import ThreatIntel
 from app.models.transaction import Transaction
+from app.models.setting import PlatformSetting
 
 __all__ = [
     "User",
@@ -22,4 +23,5 @@ __all__ = [
     "AuditLog",
     "ThreatIntel",
     "Transaction",
+    "PlatformSetting",
 ]

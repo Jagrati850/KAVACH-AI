@@ -20,12 +20,14 @@ from app.schemas.scan import (
     ScamCallRequest,
     ScanHistoryResponse,
     ScanResponse,
+    ScamCallAudioResponse,
     ScanResultResponse,
     CheckEntityResponse,
     DenominationFeaturesResponse,
     CurrencyFeatureInfo,
 )
 from app.ai.orchestrator import AIOrchestrator
+from app.ai.speech_to_text import transcribe_audio
 
 
 router = APIRouter()
@@ -77,6 +79,127 @@ async def analyze_scam_text(
 
         scan.status = ScanStatus.COMPLETED
         await db.flush()
+
+        # Check if the scan detects Medium or High Risk
+        if analysis["verdict"] in ["suspicious", "dangerous"]:
+            import re
+            import random
+            import string
+            from app.models.report import ReportType, ReportStatus, Severity
+            from app.models.case import Case, CasePriority, CaseStatus
+            from app.models.user import User, UserRole
+            from app.models.alert import Notification
+            from app.models.audit import AuditLog
+
+            feature_scores = analysis.get("feature_scores", {})
+            digital_arrest_markers = feature_scores.get("digital_arrest_markers", 0)
+            financial_extraction = feature_scores.get("financial_extraction", 0)
+
+            ctx = (payload.context or "").lower()
+            if digital_arrest_markers > 0.3:
+                r_type = ReportType.DIGITAL_ARREST
+            elif ctx == "email":
+                r_type = ReportType.PHISHING
+            elif financial_extraction > 0.3 or "upi" in payload.text.lower() or "bank" in payload.text.lower():
+                r_type = ReportType.UPI_FRAUD
+            else:
+                r_type = ReportType.PHISHING
+
+            sev = Severity.MEDIUM if analysis["verdict"] == "suspicious" else Severity.HIGH
+
+            suspect_phone = None
+            phone_match = re.search(r"\b(?:\+91|0)?[6-9]\d{9}\b", payload.text)
+            if phone_match:
+                suspect_phone = phone_match.group(0)
+
+            suspect_account = None
+            upi_match = re.search(r"\b[a-zA-Z0-9.\-_]{2,49}@[a-zA-Z]{2,10}\b", payload.text)
+            if upi_match:
+                suspect_account = upi_match.group(0)
+
+            # Create Report
+            report = Report(
+                user_id=current_user.id,
+                report_type=r_type,
+                title=f"AI Escalate: Suspicious {r_type.value.replace('_', ' ').title()}",
+                description=payload.text,
+                status=ReportStatus.SUBMITTED,
+                severity=sev,
+                suspect_phone=suspect_phone,
+                suspect_account=suspect_account,
+                ai_analysis=analysis,
+                ai_threat_score=analysis["confidence_score"],
+            )
+            db.add(report)
+            await db.flush()
+
+            # Generate unique case number
+            suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+            case_num = f"KAV-2026-{suffix}"
+
+            case_priority = CasePriority.MEDIUM if analysis["verdict"] == "suspicious" else CasePriority.HIGH
+
+            # Create Case
+            case = Case(
+                case_number=case_num,
+                report_id=report.id,
+                status=CaseStatus.OPEN,
+                priority=case_priority,
+                title=f"AI Incident Analysis - Case {case_num}",
+                description=(
+                    f"Suspicious incident automatically flagged by KAVACH AI Safeshield Scanner.\n\n"
+                    f"Source User: {current_user.full_name} ({current_user.email})\n"
+                    f"Payload Context Category: {ctx.upper()}\n"
+                    f"AI Threat Confidence Rank: {analysis['confidence_score']*100:.1f}%\n"
+                    f"Summary Analysis:\n{analysis['summary']}\n\n"
+                    f"Message Scanned Content:\n\"{payload.text}\""
+                )
+            )
+            db.add(case)
+            await db.flush()
+
+            # Create AuditLog
+            audit_log = AuditLog(
+                user_id=current_user.id,
+                action="scan_escalation",
+                resource="cases",
+                resource_id=case.id,
+                details={
+                    "case_number": case.case_number,
+                    "report_id": report.id,
+                    "verdict": analysis["verdict"],
+                    "confidence_score": analysis["confidence_score"]
+                }
+            )
+            db.add(audit_log)
+
+            # Create Notifications
+            citizen_notif = Notification(
+                user_id=current_user.id,
+                alert_id=None,
+                title="Potential Threat Saved & Escalated",
+                message=f"Your recent scan has been automatically escalated as a {analysis['verdict'].upper()} risk incident. Tracking Case Number: {case.case_number}.",
+                notification_type="new_case",
+                is_read=False
+            )
+            db.add(citizen_notif)
+
+            admin_and_leos_stmt = select(User).where(User.role.in_([UserRole.ADMIN, UserRole.LEO]))
+            admin_and_leos_res = await db.execute(admin_and_leos_stmt)
+            admins_and_leos = admin_and_leos_res.scalars().all()
+
+            for recipient in admins_and_leos:
+                notif = Notification(
+                    user_id=recipient.id,
+                    alert_id=None,
+                    title="Threat Alert Case Automatically Spawned",
+                    message=f"A new Threat Case {case.case_number} has been generated via Citizen Scan. Confidence level: {analysis['confidence_score']*100:.1f}%",
+                    notification_type="new_case",
+                    is_read=False
+                )
+                db.add(notif)
+            
+            await db.flush()
 
         return ScanResponse(
             id=scan.id,
@@ -307,8 +430,8 @@ async def analyze_scam_call(
     await db.flush()
 
     try:
-        analysis = await orchestrator.analyze_scam_text(
-            text=payload.transcript,
+        analysis = await orchestrator.analyze_call_transcript(
+            transcript=payload.transcript,
             language=payload.language,
             context="call_transcript",
         )
@@ -345,6 +468,223 @@ async def analyze_scam_call(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Scam call analysis failed: {str(e)}",
+        )
+
+
+# ── Scam Call Audio Upload → Speech-to-Text → Analysis ──
+@router.post("/scam-call-audio", response_model=ScamCallAudioResponse)
+async def analyze_scam_call_audio(
+    file: UploadFile = File(...),
+    language: str = Form("auto"),
+    current_user: CurrentUser = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Upload a call recording (mp3/wav/m4a/ogg/webm). The audio is transcribed
+    to text via speech-to-text, then run through the same scam-analysis pipeline
+    used for pasted transcripts. Medium/High risk results are escalated into a
+    Report + Case for the LEO pipeline, identical to the text workflow.
+    """
+    start = time.time()
+
+    allowed_ext = (".wav", ".mp3", ".m4a", ".ogg", ".mpeg", ".mp4", ".webm", ".aac", ".flac")
+    if not file.filename or not file.filename.lower().endswith(allowed_ext):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid file type. Allowed: {', '.join(allowed_ext)}",
+        )
+
+    file_content = await file.read()
+    if len(file_content) > 25 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="File too large. Maximum 25MB.",
+        )
+
+    scan = Scan(
+        user_id=current_user.id,
+        scan_type=ScanType.SCAM_CALL,
+        status=ScanStatus.PROCESSING,
+    )
+    db.add(scan)
+    await db.flush()
+
+    try:
+        # Step 1 — speech to text
+        stt = await transcribe_audio(file_content, language=language)
+        transcript = stt["transcript"]
+
+        if not transcript or len(transcript.strip()) < 5:
+            scan.status = ScanStatus.FAILED
+            await db.flush()
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Could not extract intelligible speech from the audio. Please upload a clearer recording.",
+            )
+
+        scan.input_text = transcript
+
+        # Step 2 — run the trained call-scam ML classifier on the transcript
+        analysis = await orchestrator.analyze_call_transcript(
+            transcript=transcript,
+            language=language,
+            context="call_transcript",
+        )
+
+        processing_time = (time.time() - start) * 1000
+
+        result = ScanResult(
+            scan_id=scan.id,
+            confidence_score=analysis["confidence_score"],
+            verdict=Verdict(analysis["verdict"]),
+            summary=analysis["summary"],
+            detailed_analysis=analysis.get("detailed_analysis"),
+            feature_scores=analysis.get("feature_scores"),
+            risk_factors=analysis.get("risk_factors"),
+            recommendations=analysis.get("recommendations"),
+            processing_time_ms=processing_time,
+        )
+        db.add(result)
+
+        scan.status = ScanStatus.COMPLETED
+        await db.flush()
+
+        # Step 3 — escalate Medium/High risk into a Case for the LEO pipeline
+        case_number = None
+        if analysis["verdict"] in ["suspicious", "dangerous"]:
+            import re
+            import random
+            import string
+            from app.models.report import ReportType, ReportStatus, Severity
+            from app.models.case import Case, CasePriority, CaseStatus
+            from app.models.user import User, UserRole
+            from app.models.alert import Notification
+            from app.models.audit import AuditLog
+
+            scam_category = (analysis.get("detailed_analysis") or {}).get("scam_category", "")
+            if scam_category in ("digital_arrest_scam", "fake_cbi_police_call", "courier_scam", "customs_scam"):
+                r_type = ReportType.DIGITAL_ARREST
+            elif scam_category in ("upi_refund_scam", "otp_scam", "fake_kyc_update"):
+                r_type = ReportType.UPI_FRAUD
+            elif "upi" in transcript.lower() or "bank" in transcript.lower():
+                r_type = ReportType.UPI_FRAUD
+            else:
+                r_type = ReportType.PHISHING
+
+            sev = Severity.MEDIUM if analysis["verdict"] == "suspicious" else Severity.HIGH
+
+            suspect_phone = None
+            phone_match = re.search(r"\b(?:\+91|0)?[6-9]\d{9}\b", transcript)
+            if phone_match:
+                suspect_phone = phone_match.group(0)
+
+            suspect_account = None
+            upi_match = re.search(r"\b[a-zA-Z0-9.\-_]{2,49}@[a-zA-Z]{2,10}\b", transcript)
+            if upi_match:
+                suspect_account = upi_match.group(0)
+
+            report = Report(
+                user_id=current_user.id,
+                report_type=r_type,
+                title=f"AI Escalate: Suspicious {r_type.value.replace('_', ' ').title()} (Voice Call)",
+                description=transcript,
+                status=ReportStatus.SUBMITTED,
+                severity=sev,
+                suspect_phone=suspect_phone,
+                suspect_account=suspect_account,
+                ai_analysis=analysis,
+                ai_threat_score=analysis["confidence_score"],
+            )
+            db.add(report)
+            await db.flush()
+
+            suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+            case_num = f"KAV-2026-{suffix}"
+
+            case_priority = CasePriority.MEDIUM if analysis["verdict"] == "suspicious" else CasePriority.HIGH
+
+            case = Case(
+                case_number=case_num,
+                report_id=report.id,
+                status=CaseStatus.OPEN,
+                priority=case_priority,
+                title=f"AI Incident Analysis - Case {case_num}",
+                description=(
+                    f"Suspicious call recording automatically flagged by KAVACH AI Safeshield Scanner.\n\n"
+                    f"Source User: {current_user.full_name} ({current_user.email})\n"
+                    f"Payload Context Category: CALL_TRANSCRIPT (VOICE UPLOAD)\n"
+                    f"AI Threat Confidence Rank: {analysis['confidence_score']*100:.1f}%\n"
+                    f"Summary Analysis:\n{analysis['summary']}\n\n"
+                    f"Transcribed Call Content:\n\"{transcript}\""
+                )
+            )
+            db.add(case)
+            await db.flush()
+            case_number = case.case_number
+
+            audit_log = AuditLog(
+                user_id=current_user.id,
+                action="scan_escalation",
+                resource="cases",
+                resource_id=case.id,
+                details={
+                    "case_number": case.case_number,
+                    "report_id": report.id,
+                    "verdict": analysis["verdict"],
+                    "confidence_score": analysis["confidence_score"],
+                    "source": "voice_call_upload",
+                }
+            )
+            db.add(audit_log)
+
+            citizen_notif = Notification(
+                user_id=current_user.id,
+                alert_id=None,
+                title="Potential Threat Saved & Escalated",
+                message=f"Your uploaded call recording has been automatically escalated as a {analysis['verdict'].upper()} risk incident. Tracking Case Number: {case.case_number}.",
+                notification_type="new_case",
+                is_read=False
+            )
+            db.add(citizen_notif)
+
+            admin_and_leos_stmt = select(User).where(User.role.in_([UserRole.ADMIN, UserRole.LEO]))
+            admin_and_leos_res = await db.execute(admin_and_leos_stmt)
+            admins_and_leos = admin_and_leos_res.scalars().all()
+
+            for recipient in admins_and_leos:
+                notif = Notification(
+                    user_id=recipient.id,
+                    alert_id=None,
+                    title="Threat Alert Case Automatically Spawned",
+                    message=f"A new Threat Case {case.case_number} has been generated via Citizen Voice Call Scan. Confidence level: {analysis['confidence_score']*100:.1f}%",
+                    notification_type="new_case",
+                    is_read=False
+                )
+                db.add(notif)
+
+            await db.flush()
+
+        return ScamCallAudioResponse(
+            id=scan.id,
+            scan_type=scan.scan_type.value,
+            status=scan.status.value,
+            created_at=scan.created_at,
+            result=ScanResultResponse.model_validate(result),
+            transcript=transcript,
+            detected_language=stt.get("detected_language"),
+            language_probability=stt.get("language_probability"),
+            audio_duration_seconds=stt.get("duration_seconds"),
+            case_number=case_number,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        scan.status = ScanStatus.FAILED
+        await db.flush()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Call audio analysis failed: {str(e)}",
         )
 
 

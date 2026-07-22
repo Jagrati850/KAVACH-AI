@@ -77,6 +77,42 @@ async def create_report(
     db.add(report)
     await db.flush()
 
+    # Automatically notify admins and LEOs, and create an audit log
+    try:
+        from app.models.user import User, UserRole
+        from app.models.alert import Notification
+        from app.models.audit import AuditLog
+
+        # Add Audit Log entry
+        audit_log = AuditLog(
+            user_id=current_user.id,
+            action="report_submission",
+            resource="reports",
+            resource_id=report.id,
+            details={"title": report.title, "severity": report.severity.value if hasattr(report.severity, "value") else str(report.severity)}
+        )
+        db.add(audit_log)
+
+        # Query all Admins and LEOs to notify them
+        admin_and_leos_stmt = select(User).where(User.role.in_([UserRole.ADMIN, UserRole.LEO]))
+        admin_and_leos_res = await db.execute(admin_and_leos_stmt)
+        admins_and_leos = admin_and_leos_res.scalars().all()
+
+        for recipient in admins_and_leos:
+            notif = Notification(
+                user_id=recipient.id,
+                alert_id=None,
+                title="New Incident Report Submitted",
+                message=f"Citizen '{current_user.full_name}' submitted a new report: '{report.title}' (Severity: {(report.severity.value if hasattr(report.severity, 'value') else str(report.severity)).upper()})",
+                notification_type="new_report",
+                is_read=False
+            )
+            db.add(notif)
+        await db.flush()
+    except Exception as e:
+        import sys
+        print(f"Error creating audit log/notification: {e}", file=sys.stderr)
+
     report_dict = {
         "id": report.id,
         "user_id": report.user_id,
@@ -109,7 +145,7 @@ async def create_report(
         recipient_phone = current_user.phone or "+919876543210"
         await notif_service.send_custom_alert(
             phone=recipient_phone,
-            message=f"KAVACH ALERT: scam report successfully submitted. Case ID: {report.id}. Severity tier: {report.severity.value.upper()}."
+            message=f"KAVACH ALERT: scam report successfully submitted. Case ID: {report.id}. Severity tier: {(report.severity.value if hasattr(report.severity, 'value') else str(report.severity)).upper()}."
         )
     except Exception:
         pass

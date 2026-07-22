@@ -150,6 +150,9 @@ async def send_test_sms(
     """
     from app.services.sms import get_notification_service
     from app.config import get_settings
+    from app.models.alert import Alert, AlertType, AlertSeverity, Notification
+    from app.models.audit import AuditLog
+    from app.models.user import User
 
     settings = get_settings()
     notif_service = get_notification_service()
@@ -163,6 +166,7 @@ async def send_test_sms(
             detail="SMS Dispatch Error: No recipient phone number supplied or found in user details."
         )
 
+    # 1. Trigger the SMS Dispatch Service (prints to console)
     success = await notif_service.send_custom_alert(
         phone=target_phone,
         message=payload.message
@@ -173,6 +177,42 @@ async def send_test_sms(
             status_code=500,
             detail=f"SMS Delivery failed."
         )
+
+    # 2. Store broadcast alert message in DB
+    alert = Alert(
+        alert_type=AlertType.SYSTEM,
+        severity=AlertSeverity.WARNING,
+        title="Administrative Safety Broadcast",
+        message=payload.message,
+        alert_metadata={"recipient": target_phone}
+    )
+    db.add(alert)
+    await db.flush()
+
+    # 3. Create active Notification entries for all users
+    users_res = await db.execute(select(User))
+    all_users = users_res.scalars().all()
+    for u in all_users:
+        notif = Notification(
+            user_id=u.id,
+            alert_id=alert.id,
+            title="Public Safety Broadcast Alert",
+            message=payload.message,
+            notification_type="broadcast",
+            is_read=False
+        )
+        db.add(notif)
+
+    # 4. Generate Audit Log Entry
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action="broadcast_message",
+        resource="broadcast",
+        resource_id=target_phone,
+        details={"message": payload.message, "recipient": target_phone}
+    )
+    db.add(audit_log)
+    await db.flush()
 
     return {
         "success": True,
