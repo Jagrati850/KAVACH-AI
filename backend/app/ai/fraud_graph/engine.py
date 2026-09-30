@@ -226,7 +226,7 @@ class FraudGraphEngine:
                 "max_risk": round(max(risk_scores), 4) if risk_scores else 0,
                 "flagged_members": flagged,
                 "transaction_volume": round(total_volume, 2),
-                "is_suspicious": np.mean(risk_scores) > 0.4 if risk_scores else False,
+                "is_suspicious": bool(np.mean(risk_scores) > 0.4) if risk_scores else False,
             }
             communities.append(community)
 

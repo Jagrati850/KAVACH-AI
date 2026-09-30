@@ -26,9 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     loadStats();
     loadOverviewThreatIntel();
-    if (role === 'leo') {
-      setTimeout(loadAnalyticsCenter, 200);
-    }
+    // NOTE: The analytics map must NOT be built here — its tab is hidden on
+    // load, so Leaflet would size it to 0x0 and render blank. It is now built
+    // lazily by switchTab('analytics') once the panel is actually visible.
   }
 });
 
@@ -112,7 +112,8 @@ function switchTab(tabId) {
     loadStats();
     loadOverviewThreatIntel();
   } else if (tabId === 'analytics') {
-    setTimeout(refreshMapSize, 100);
+    loadAnalyticsCenter();
+    setTimeout(refreshMapSize, 150);
   } else if (tabId === 'reports') {
     if (role === 'citizen') {
       loadCitizenReports();
@@ -516,49 +517,245 @@ async function loadAnalyticsCenter() {
   loadThreatIntelFull();
 }
 
-// Local simulation / load of spatial markers
-async function initHeatmap() {
-  if (mapInstance) return;
+// Layer handles so we can rebuild without duplicating markers
+let userMarker = null;
+let userAccuracyCircle = null;
+let crimeLayerGroup = null;
+let policeLayerGroup = null;
 
-  // Initialize Map centering India coordinates
+const SEVERITY_COLORS = {
+  critical: '#ff1744',
+  high: '#ff6d00',
+  medium: '#ffab00',
+  low: '#00e676',
+};
+
+// Initialize the Leaflet map + all intelligence layers
+function initHeatmap() {
+  const mapEl = document.getElementById('hotspotsMap');
+  if (!mapEl) return;
+
+  // Leaflet failed to load (offline / CDN blocked) — show a clear message
+  if (typeof L === 'undefined') {
+    mapEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;' +
+      'height:100%;color:#ff6d00;font-size:13px;text-align:center;padding:20px;">' +
+      'Map library (Leaflet) could not load. Check your internet connection and refresh.</div>';
+    console.error('Leaflet (L) is undefined — CDN did not load.');
+    return;
+  }
+
+  if (mapInstance) {
+    // Already built (e.g. re-entering the tab) — just remeasure the container
+    refreshMapSize();
+    setTimeout(refreshMapSize, 200);
+    return;
+  }
+
+  // Center on India until we get the officer's real location
   mapInstance = L.map('hotspotsMap', {
     zoomControl: false
   }).setView([20.5937, 78.9629], 5);
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 20
+  // OpenStreetMap standard tiles — 100% free, NO API key required, ever.
+  // (CARTO's free basemaps were serving "API key required" placeholder tiles,
+  //  so they are intentionally not used here.)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    subdomains: 'abc',
+    maxZoom: 19,
   }).addTo(mapInstance);
 
   L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
 
+  crimeLayerGroup = L.layerGroup().addTo(mapInstance);
+  policeLayerGroup = L.layerGroup().addTo(mapInstance);
+
+  addMapLegend();
+
+  // Load layers
+  loadCrimeHotspots();
+  locateOfficer();
+
+  // Fix grey-tile rendering: remeasure a few times as the panel lays out
+  [100, 300, 700].forEach(ms => setTimeout(refreshMapSize, ms));
+}
+
+// Plot reported crime incidents + density hotspots from the backend
+async function loadCrimeHotspots() {
+  if (!crimeLayerGroup) return;
   try {
     const data = await callBackend('/api/v1/analytics/geospatial', 'GET');
-    data.hotspots.forEach(pt => {
-      // Create glowing points representing dense hot clusters
-      const markerOptions = {
-        radius: Math.max(12, pt.density * 22),
-        fillColor: '#ff3d00',
-        color: '#ff9100',
-        weight: 1,
-        opacity: 0.8,
-        fillOpacity: 0.45
-      };
 
-      const circle = L.circleMarker([pt.latitude, pt.longitude], markerOptions).addTo(mapInstance);
-      circle.bindPopup(`
-        <div style="font-family:sans-serif;color:#000;padding:4px;">
-          <h4 style="margin:0;font-size:13px;text-transform:uppercase;">${pt.city}, ${pt.state}</h4>
-          <p style="margin:6px 0 0;font-size:11px;">Cases Reported: <b>${pt.cases_count}</b></p>
-          <p style="margin:4px 0 0;font-size:11px;">Primary Scam: <b>${pt.primary_crime_type}</b></p>
-          <p style="margin:4px 0 0;font-size:11px;">Mule Density Factor: <b>${(pt.density*100).toFixed(0)}%</b></p>
+    // Density glow rings (KDE hotspots)
+    (data.hotspots || []).forEach(h => {
+      const high = h.risk_level === 'high';
+      L.circle([h.latitude, h.longitude], {
+        radius: high ? 22000 : 13000,
+        fillColor: high ? '#ff1744' : '#ff9100',
+        color: 'transparent',
+        fillOpacity: 0.15,
+      }).addTo(crimeLayerGroup);
+    });
+
+    // Individual incident markers with full crime detail
+    (data.points || []).forEach(pt => {
+      const sev = String(pt.severity || '').toLowerCase();
+      const color = SEVERITY_COLORS[sev] || '#ff6d00';
+      const threat = String(pt.threat_type || 'unknown').replace(/_/g, ' ');
+
+      L.circleMarker([pt.latitude, pt.longitude], {
+        radius: 9,
+        fillColor: color,
+        color: '#ffffff',
+        weight: 1.5,
+        opacity: 0.95,
+        fillOpacity: 0.75,
+      }).addTo(crimeLayerGroup).bindPopup(`
+        <div style="font-family:sans-serif;color:#000;min-width:180px;padding:2px;">
+          <h4 style="margin:0;font-size:13px;text-transform:uppercase;">${pt.city || 'Unknown'}, ${pt.state || ''}</h4>
+          <p style="margin:6px 0 0;font-size:11px;">Threat Type: <b>${threat}</b></p>
+          <p style="margin:4px 0 0;font-size:11px;">Severity: <b style="color:${color};text-transform:uppercase;">${pt.severity || 'n/a'}</b></p>
+          <p style="margin:4px 0 0;font-size:11px;">Incidents Logged: <b>${pt.count}</b></p>
         </div>
       `);
     });
+
+    if ((data.total_incidents || 0) === 0) {
+      console.warn('No geolocated incidents returned by /analytics/geospatial');
+    }
   } catch (err) {
-    console.error('Failed to load spatial hotspot layers:', err);
+    console.error('Failed to load crime hotspot layers:', err);
   }
+}
+
+// Center the map on the officer's live location and drop a marker
+function locateOfficer() {
+  if (!navigator.geolocation) {
+    console.warn('Geolocation unavailable in this browser.');
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude, longitude, accuracy } = pos.coords;
+      mapInstance.setView([latitude, longitude], 13);
+
+      const meIcon = L.divIcon({
+        className: 'me-marker',
+        html: '<div class="me-dot"></div>',
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+      });
+
+      if (userMarker) mapInstance.removeLayer(userMarker);
+      if (userAccuracyCircle) mapInstance.removeLayer(userAccuracyCircle);
+
+      userAccuracyCircle = L.circle([latitude, longitude], {
+        radius: accuracy || 500,
+        color: '#00e5ff',
+        weight: 1,
+        fillColor: '#00e5ff',
+        fillOpacity: 0.08,
+      }).addTo(mapInstance);
+
+      userMarker = L.marker([latitude, longitude], { icon: meIcon })
+        .addTo(mapInstance)
+        .bindPopup('<b style="font-family:sans-serif;">📍 Your current location</b>')
+        .openPopup();
+
+      // Pull nearby police / cyber cells around the officer
+      loadPoliceStations(latitude, longitude);
+    },
+    (err) => {
+      console.warn('Location access denied or failed:', err.message,
+        '— map stays on national view. Enable location & serve over localhost/https.');
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  );
+}
+
+// Fetch real nearby police stations from OpenStreetMap (Overpass API — no key)
+async function loadPoliceStations(lat, lon) {
+  if (!policeLayerGroup) return;
+  const radius = 6000; // metres
+  const query = `[out:json][timeout:25];(` +
+    `node["amenity"="police"](around:${radius},${lat},${lon});` +
+    `way["amenity"="police"](around:${radius},${lat},${lon});` +
+    `);out center;`;
+
+  try {
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: 'data=' + encodeURIComponent(query),
+    });
+    if (!res.ok) throw new Error('Overpass HTTP ' + res.status);
+    const data = await res.json();
+
+    const policeIcon = L.divIcon({
+      className: 'police-marker',
+      html: '<div class="police-badge">🚔</div>',
+      iconSize: [26, 26],
+      iconAnchor: [13, 13],
+    });
+
+    let count = 0;
+    (data.elements || []).forEach((el) => {
+      const plat = el.lat || (el.center && el.center.lat);
+      const plon = el.lon || (el.center && el.center.lon);
+      if (!plat || !plon) return;
+
+      const tags = el.tags || {};
+      const name = tags.name || tags['name:en'] || 'Police Station';
+      const phone = tags.phone || tags['contact:phone'] || '';
+      const addr = [tags['addr:street'], tags['addr:city'], tags['addr:district']]
+        .filter(Boolean).join(', ');
+      const distKm = haversineKm(lat, lon, plat, plon).toFixed(1);
+
+      L.marker([plat, plon], { icon: policeIcon })
+        .addTo(policeLayerGroup)
+        .bindPopup(`
+          <div style="font-family:sans-serif;color:#000;min-width:180px;padding:2px;">
+            <h4 style="margin:0;font-size:13px;">🚔 ${name}</h4>
+            ${addr ? `<p style="margin:5px 0 0;font-size:11px;">${addr}</p>` : ''}
+            ${phone ? `<p style="margin:4px 0 0;font-size:11px;">📞 <b>${phone}</b></p>` : ''}
+            <p style="margin:4px 0 0;font-size:11px;">Distance: <b>${distKm} km</b> from you</p>
+          </div>
+        `);
+      count++;
+    });
+
+    if (count === 0) {
+      console.warn('No police stations mapped within 6 km in OSM data.');
+    }
+  } catch (err) {
+    console.warn('Police station lookup failed:', err.message);
+  }
+}
+
+// Great-circle distance in km
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.asin(Math.sqrt(a));
+}
+
+// Small on-map legend
+function addMapLegend() {
+  const legend = L.control({ position: 'topright' });
+  legend.onAdd = function () {
+    const div = L.DomUtil.create('div', 'map-legend');
+    div.innerHTML = `
+      <div><span class="lg-dot" style="background:#00e5ff"></span> Your location</div>
+      <div><span class="lg-dot" style="background:#ff1744"></span> Critical crime</div>
+      <div><span class="lg-dot" style="background:#ffab00"></span> Medium crime</div>
+      <div><span class="lg-emoji">🚔</span> Police station</div>
+    `;
+    return div;
+  };
+  legend.addTo(mapInstance);
 }
 
 function refreshMapSize() {

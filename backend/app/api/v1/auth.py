@@ -34,8 +34,9 @@ router = APIRouter()
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db)):
     """Register a new user and return JWT tokens."""
+    clean_email = payload.email.strip().lower()
     # Check if email already exists
-    existing = await db.execute(select(User).where(User.email == payload.email))
+    existing = await db.execute(select(User).where(User.email == clean_email))
     if existing.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -44,7 +45,7 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
 
     # Create user
     user = User(
-        email=payload.email,
+        email=clean_email,
         full_name=payload.full_name,
         password_hash=hash_password(payload.password),
         phone=payload.phone,
@@ -76,7 +77,8 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
 @router.post("/login", response_model=TokenResponse)
 async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     """Authenticate user and return JWT tokens."""
-    result = await db.execute(select(User).where(User.email == payload.email))
+    clean_email = payload.email.strip().lower()
+    result = await db.execute(select(User).where(User.email == clean_email))
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(payload.password, user.password_hash):

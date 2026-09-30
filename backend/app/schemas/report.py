@@ -9,13 +9,17 @@ from pydantic import BaseModel, Field
 
 
 class ReportCreate(BaseModel):
-    """Create a new fraud/scam report."""
+    """Create a new citizen development request or report."""
     report_type: str = Field(
         ...,
-        pattern=r"^(scam_call|phishing|counterfeit_currency|upi_fraud|digital_arrest|deepfake|identity_theft|other)$"
+        pattern=r"^(clean_air|water_sanitation|roads_transport|healthcare|education|digital_infra|electricity_energy|scam_call|phishing|counterfeit_currency|upi_fraud|digital_arrest|deepfake|identity_theft|other)$"
     )
     title: str = Field(..., min_length=5, max_length=500)
-    description: str = Field(..., min_length=20, max_length=5000)
+    description: str = Field(..., min_length=10, max_length=5000)
+    infra_category: Optional[str] = Field(None, max_length=100)
+    channel: Optional[str] = Field("web", max_length=50)
+    language: Optional[str] = Field("en", max_length=20)
+    affected_population: Optional[int] = Field(None, ge=0)
     suspect_phone: Optional[str] = Field(None, max_length=20)
     suspect_name: Optional[str] = Field(None, max_length=255)
     suspect_account: Optional[str] = Field(None, max_length=255)
@@ -28,19 +32,21 @@ class ReportCreate(BaseModel):
 
     model_config = {"json_schema_extra": {
         "example": {
-            "report_type": "digital_arrest",
-            "title": "Fake CBI officer demanded money via video call",
-            "description": "Received a WhatsApp video call from person claiming to be CBI officer. Showed fake ID card and arrest warrant. Demanded ₹2,00,000 to clear my name from a fake case. The call lasted 45 minutes.",
-            "suspect_phone": "+918765432109",
-            "amount_lost": 200000,
-            "city": "Mumbai",
-            "state": "Maharashtra",
+            "report_type": "clean_air",
+            "title": "Severe Air Pollution & Dust Hazard in Industrial Corridor",
+            "description": "High PM2.5 levels near Anand Vihar terminal due to unpaved roads and construction dust. Need immediate green barrier installation and continuous smog tower operation.",
+            "infra_category": "Clean Air & Climate",
+            "channel": "whatsapp",
+            "language": "hi",
+            "city": "Delhi",
+            "state": "Delhi",
+            "affected_population": 450000
         }
     }}
 
 
 class ReportUpdate(BaseModel):
-    """Update report (status changes by LEO/Admin)."""
+    """Update report (status changes by Policymaker/Admin)."""
     status: Optional[str] = Field(
         None,
         pattern=r"^(submitted|under_review|investigating|resolved|dismissed)$"
@@ -50,7 +56,8 @@ class ReportUpdate(BaseModel):
         pattern=r"^(low|medium|high|critical)$"
     )
     title: Optional[str] = Field(None, min_length=5, max_length=500)
-    description: Optional[str] = Field(None, min_length=20, max_length=5000)
+    description: Optional[str] = Field(None, min_length=10, max_length=5000)
+    priority_score: Optional[float] = Field(None, ge=0, le=100)
 
 
 class EvidenceResponse(BaseModel):
@@ -73,6 +80,11 @@ class ReportResponse(BaseModel):
     description: str
     status: str
     severity: str
+    infra_category: Optional[str] = None
+    channel: Optional[str] = "web"
+    language: Optional[str] = "en"
+    priority_score: Optional[float] = 50.0
+    affected_population: Optional[int] = None
     suspect_phone: Optional[str] = None
     suspect_name: Optional[str] = None
     suspect_account: Optional[str] = None

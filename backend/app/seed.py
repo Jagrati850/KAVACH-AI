@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from app.core.security import hash_password
-from app.database import async_session, init_db
+from app.database import async_session, init_db, reset_db
 from app.models.alert import Alert, AlertSeverity, AlertType, Notification
 from app.models.case import Case, CaseNote, CasePriority, CaseStatus
 from app.models.report import Report, ReportStatus, ReportType, Severity
@@ -123,7 +123,7 @@ async def seed_database():
     """Seed the database with comprehensive demo data."""
     print("[SEED] KAVACH AI - Seeding demo data...")
 
-    await init_db()
+    await reset_db()
 
     async with async_session() as session:
         # ── 1. Create Users ──────────────────────────────
@@ -211,12 +211,135 @@ async def seed_database():
         for user in users.values():
             session.add(user)
         await session.flush()
-        print(f"  ✅ Created {len(users)} users")
+        print(f"  [OK] Created {len(users)} users")
 
-        # ── 2. Create Reports ────────────────────────────
+        INFRA_REPORTS = [
+    {
+        "type": ReportType.CLEAN_AIR,
+        "category": "Clean Air & Climate",
+        "title": "Severe Industrial Air Pollution & Hazardous Smog in Anand Vihar Corridor",
+        "description": "High PM2.5 and PM10 levels recorded daily near Anand Vihar ISBT. Major dust from unpaved roads and construction sites affecting school children and elderly residents. Urgent need for mist spraying cannons and green belt buffer.",
+        "severity": Severity.CRITICAL,
+        "city": "Delhi",
+        "state": "Delhi",
+        "channel": "whatsapp",
+        "language": "hi",
+        "priority_score": 94.5,
+        "affected_population": 520000,
+    },
+    {
+        "type": ReportType.WATER_SANITATION,
+        "category": "Water & Sanitation",
+        "title": "Clean Drinking Water Pipeline Failure in Drought-Prone Ward",
+        "description": "Groundwater contamination and dried municipal taps across 12 villages in Latur district. Villagers walking 4 km daily for drinking water. Requesting extension of Jal Jeevan Mission pipeline.",
+        "severity": Severity.CRITICAL,
+        "city": "Pune",
+        "state": "Maharashtra",
+        "channel": "voice_call",
+        "language": "mr",
+        "priority_score": 91.2,
+        "affected_population": 180000,
+    },
+    {
+        "type": ReportType.ROADS_TRANSPORT,
+        "category": "Roads & Mobility",
+        "title": "Pothole Hazard & Missing Flyover Ramp on Outer Ring Road Expressway",
+        "description": "Severe traffic gridlock and accidents near Marathahalli junction due to damaged asphalt and incomplete peripheral road expansion. Emergency vehicles trapped daily.",
+        "severity": Severity.HIGH,
+        "city": "Bangalore",
+        "state": "Karnataka",
+        "channel": "web",
+        "language": "kn",
+        "priority_score": 88.7,
+        "affected_population": 350000,
+    },
+    {
+        "type": ReportType.HEALTHCARE,
+        "category": "Healthcare",
+        "title": "Primary Health Centre Infrastructure Upgrade & ICU Bed Deficiency",
+        "description": "District hospital lacking oxygen generator plant and maternal health diagnostics. Rural patients forced to travel 60 km to Patna for basic emergency care.",
+        "severity": Severity.CRITICAL,
+        "city": "Patna",
+        "state": "Bihar",
+        "channel": "sms",
+        "language": "hi",
+        "priority_score": 93.0,
+        "affected_population": 290000,
+    },
+    {
+        "type": ReportType.EDUCATION,
+        "category": "Education",
+        "title": "Government Secondary School Digital Classroom & Sanitation Deficit",
+        "description": "Over 800 students studying without computer lab facilities or functioning drinking water units in Malda division. Requesting smart classroom setup under PM SHRI initiative.",
+        "severity": Severity.HIGH,
+        "city": "Kolkata",
+        "state": "West Bengal",
+        "channel": "whatsapp",
+        "language": "bn",
+        "priority_score": 84.1,
+        "affected_population": 65000,
+    },
+    {
+        "type": ReportType.ELECTRICITY_ENERGY,
+        "category": "Energy & Power",
+        "title": "Frequent Power Outages & Agricultural Micro-Grid Requirement",
+        "description": "14-hour daily load shedding severely impacting agricultural pump sets and local cottage industries. Requesting solar micro-grid installation under PM-KUSUM scheme.",
+        "severity": Severity.HIGH,
+        "city": "Jaipur",
+        "state": "Rajasthan",
+        "channel": "telegram",
+        "language": "hi",
+        "priority_score": 86.4,
+        "affected_population": 120000,
+    },
+    {
+        "type": ReportType.DIGITAL_INFRA,
+        "category": "Digital Infrastructure",
+        "title": "5G Optical Fiber Gap & CSC Digital Service Disruption",
+        "description": "Common Service Centre (CSC) in tribal belt unable to process direct benefit transfers (DBT) due to lack of fiber connectivity and low tower coverage.",
+        "severity": Severity.MEDIUM,
+        "city": "Guwahati",
+        "state": "Assam",
+        "channel": "voice_call",
+        "language": "as",
+        "priority_score": 79.8,
+        "affected_population": 45000,
+    },
+]
+
+# ── 2. Create Reports ────────────────────────────
         citizen_ids = [users["citizen1"].id, users["citizen2"].id, users["citizen3"].id]
         reports = []
 
+        # Seed Infrastructure Citizen Requests
+        for infra in INFRA_REPORTS:
+            days_ago = random.randint(1, 15)
+            # Find city Lat Lon
+            c_info = next((c for c in INDIAN_CITIES if c["city"].lower() == infra["city"].lower()), INDIAN_CITIES[0])
+            report = Report(
+                id=str(uuid.uuid4()),
+                user_id=random.choice(citizen_ids),
+                report_type=infra["type"],
+                infra_category=infra["category"],
+                title=infra["title"],
+                description=infra["description"],
+                status=random.choice([ReportStatus.SUBMITTED, ReportStatus.UNDER_REVIEW, ReportStatus.INVESTIGATING]),
+                severity=infra["severity"],
+                channel=infra["channel"],
+                language=infra["language"],
+                priority_score=infra["priority_score"],
+                affected_population=infra["affected_population"],
+                latitude=c_info["lat"] + random.uniform(-0.02, 0.02),
+                longitude=c_info["lon"] + random.uniform(-0.02, 0.02),
+                city=c_info["city"],
+                state=c_info["state"],
+                ai_threat_score=infra["priority_score"] / 100.0,
+                created_at=datetime.now(timezone.utc) - timedelta(days=days_ago),
+            )
+            session.add(report)
+            reports.append(report)
+
+        # Seed Cyber Scam Reports
         for i, scam_data in enumerate(SCAM_REPORTS):
             city_data = random.choice(INDIAN_CITIES)
             days_ago = random.randint(1, 30)
@@ -240,13 +363,16 @@ async def seed_database():
                 city=city_data["city"],
                 state=city_data["state"],
                 ai_threat_score=random.uniform(0.5, 0.98),
+                priority_score=random.uniform(40.0, 75.0),
+                channel=random.choice(["web", "whatsapp", "sms", "voice_call"]),
+                language=random.choice(["en", "hi", "ta", "mr"]),
                 created_at=datetime.now(timezone.utc) - timedelta(days=days_ago),
             )
             session.add(report)
             reports.append(report)
 
         await session.flush()
-        print(f"  ✅ Created {len(reports)} reports")
+        print(f"  [OK] Created {len(reports)} total citizen & infrastructure reports")
 
         # ── 3. Create Cases ──────────────────────────────
         case_count = 0
@@ -278,7 +404,7 @@ async def seed_database():
             session.add(note)
 
         await session.flush()
-        print(f"  ✅ Created {case_count} cases")
+        print(f"  [OK] Created {case_count} cases")
 
         # ── 4. Create Scans ─────────────────────────────
         scan_data = [
@@ -340,7 +466,7 @@ async def seed_database():
             session.add(result)
 
         await session.flush()
-        print(f"  ✅ Created {len(scan_data)} scans with results")
+        print(f"  [OK] Created {len(scan_data)} scans with results")
 
         # ── 5. Create Alerts ─────────────────────────────
         alert_data = [
@@ -367,7 +493,7 @@ async def seed_database():
             session.add(alert)
 
         await session.flush()
-        print(f"  ✅ Created {len(alert_data)} alerts")
+        print(f"  [OK] Created {len(alert_data)} alerts")
 
         # ── 6. Create Transactions ───────────────────────
         sender_names = ["Rajesh Kumar", "Amit Shah", "Suresh Patel", "Priya Nair", "Deepak Malhotra"]
@@ -397,7 +523,7 @@ async def seed_database():
             session.add(txn)
 
         await session.flush()
-        print("  ✅ Created 30 transactions")
+        print("  [OK] Created 30 transactions")
 
         # ── 7. Create Threat Intel ───────────────────────
         threat_data = [
@@ -424,12 +550,12 @@ async def seed_database():
             session.add(threat)
 
         await session.flush()
-        print(f"  ✅ Created {len(threat_data)} threat intelligence records")
+        print(f"  [OK] Created {len(threat_data)} threat intelligence records")
 
         await session.commit()
 
-    print("\n🎉 Demo data seeding complete!")
-    print("\n📋 Demo Credentials:")
+    print("\n[SUCCESS] Demo data seeding complete!")
+    print("\n[INFO] Demo Credentials:")
     print("  Citizen:  priya.sharma@gmail.com / Demo@2026")
     print("  LEO:      inspector.rajesh@cybercell.gov.in / Demo@2026")
     print("  Analyst:  vikram.shah@sbi.co.in / Demo@2026")

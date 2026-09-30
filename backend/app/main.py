@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.config import get_settings
 from app.core.exceptions import KavachException
@@ -103,14 +103,18 @@ app.include_router(api_router)
 
 # ── Health Check ────────────────────────────────────────────
 @app.get("/", tags=["Health"])
-async def root():
-    """Root endpoint — API health check."""
+async def root(request: Request):
+    """Root endpoint — serve landing page if browser, else API info."""
+    accept = request.headers.get("accept", "")
+    if "text/html" in accept:
+        return RedirectResponse(url="/frontend/index.html")
     return {
         "name": "KAVACH AI",
         "tagline": "India's AI-Powered Digital Safety Shield",
         "version": settings.app_version,
         "status": "operational",
         "docs": "/docs",
+        "frontend": "/frontend/index.html",
     }
 
 
@@ -130,5 +134,9 @@ async def health_check():
         ],
     }
 
+from pathlib import Path
 from fastapi.staticfiles import StaticFiles
-app.mount("/frontend", StaticFiles(directory="c:\\Users\\gupta\\OneDrive\\Desktop\\Documents\\BLL\\frontend", html=True), name="frontend")
+
+_frontend_dir = Path(__file__).resolve().parent.parent.parent / "frontend"
+if _frontend_dir.exists():
+    app.mount("/frontend", StaticFiles(directory=str(_frontend_dir), html=True), name="frontend")

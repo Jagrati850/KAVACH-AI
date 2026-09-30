@@ -13,18 +13,33 @@ from app.config import get_settings
 
 settings = get_settings()
 
-# ── Password Hashing ────────────────────────────────────────
+import hashlib
+import bcrypt
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
-    """Hash a plaintext password using bcrypt."""
-    return pwd_context.hash(password)
+    """Hash a plaintext password safely using bcrypt."""
+    pw_bytes = password.encode("utf-8")
+    if len(pw_bytes) > 72:
+        pw_bytes = hashlib.sha256(pw_bytes).hexdigest().encode("utf-8")
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(pw_bytes, salt).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a plaintext password against a bcrypt hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verify a plaintext password against a bcrypt hash safely."""
+    pw_bytes = plain_password.encode("utf-8")
+    if len(pw_bytes) > 72:
+        pw_bytes = hashlib.sha256(pw_bytes).hexdigest().encode("utf-8")
+    try:
+        return bcrypt.checkpw(pw_bytes, hashed_password.encode("utf-8"))
+    except Exception:
+        try:
+            return pwd_context.verify(plain_password, hashed_password)
+        except Exception:
+            return False
 
 
 # ── JWT Token Management ────────────────────────────────────

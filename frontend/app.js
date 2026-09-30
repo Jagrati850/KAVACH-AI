@@ -3,7 +3,7 @@
    Backend Integration · JWT Auth · API Calls · UI Controllers
    ═══════════════════════════════════════════════════════════════ */
 
-const API_BASE = (window.location.protocol.startsWith('http')) ? window.location.origin : 'http://127.0.0.1:8000';
+const API_BASE = (window.location.port === '8000') ? window.location.origin : 'http://127.0.0.1:8000';
 
 // ── State ────────────────────────────────────────────────────
 let authToken = localStorage.getItem('jwt_token') || null;
@@ -125,7 +125,7 @@ document.addEventListener('click', (e) => {
 // ── Login Handler ────────────────────────────────────────────
 async function handleLogin(e) {
   e.preventDefault();
-  const email = document.getElementById('loginEmail').value;
+  const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
   const btn = document.getElementById('loginSubmitBtn');
   const errorDiv = document.getElementById('loginError');
@@ -147,32 +147,40 @@ async function handleLogin(e) {
       throw new Error(data.detail || data.message || 'Login failed');
     }
 
-    // Store JWT
+    // Store JWT and user profile
     authToken = data.access_token;
-    userRole = data.role || 'citizen';
+    const userData = data.user || {};
+    userRole = (userData.role || data.role || 'citizen').toLowerCase();
+    userName = userData.full_name || email.split('@')[0];
+
     localStorage.setItem('jwt_token', authToken);
     localStorage.setItem('user_role', userRole);
+    localStorage.setItem('user_name', userName);
 
-    // Fetch user profile
-    const profileRes = await fetch(`${API_BASE}/api/v1/auth/me`, {
-      headers: { 'Authorization': `Bearer ${authToken}` }
-    });
-    if (profileRes.ok) {
-      const profile = await profileRes.json();
-      userName = profile.full_name || email.split('@')[0];
-      userRole = profile.role || 'citizen';
-      localStorage.setItem('user_name', userName);
-      localStorage.setItem('user_role', userRole);
+    // Optional profile refresh
+    try {
+      const profileRes = await fetch(`${API_BASE}/api/v1/auth/me`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      if (profileRes.ok) {
+        const profile = await profileRes.json();
+        userName = profile.full_name || userName;
+        userRole = (profile.role || userRole).toLowerCase();
+        localStorage.setItem('user_name', userName);
+        localStorage.setItem('user_role', userRole);
+      }
+    } catch (profileErr) {
+      console.warn('Profile sync fallback:', profileErr);
     }
 
     closeModals();
-    showToast('Login successful! Welcome back.', 'success');
+    showToast(`Welcome back, ${userName}!`, 'success');
     updateAuthUI();
 
     // Redirect to dashboard after brief delay
     setTimeout(() => {
       window.location.href = 'dashboard.html';
-    }, 1200);
+    }, 600);
 
   } catch (err) {
     errorDiv.textContent = err.message;

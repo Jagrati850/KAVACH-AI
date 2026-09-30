@@ -708,6 +708,60 @@
   height: 380px;
   background: var(--bg-primary);
   border: 1px solid var(--border);
+  z-index: 1;
+}
+
+/* Render the keyless OpenStreetMap tiles as a dark basemap to match the
+   dashboard theme. Only the tile layer is filtered — markers, popups and
+   the legend live in separate panes and stay full-colour. */
+.map-wrapper .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.9) grayscale(0.15);
+}
+
+/* Live "you are here" marker */
+.me-marker .me-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #00e5ff;
+  border: 3px solid #fff;
+  box-shadow: 0 0 12px 2px #00e5ff;
+  animation: mePulse 1.8s ease-out infinite;
+}
+@keyframes mePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.6); }
+  100% { box-shadow: 0 0 0 14px rgba(0, 229, 255, 0); }
+}
+
+/* Police station marker */
+.police-marker .police-badge {
+  font-size: 20px;
+  line-height: 26px;
+  text-align: center;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
+}
+
+/* Map legend */
+.map-legend {
+  background: rgba(10, 16, 30, 0.85);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #e6f1ff;
+  line-height: 1.7;
+  backdrop-filter: blur(4px);
+}
+.map-legend .lg-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.map-legend .lg-emoji {
+  margin-right: 4px;
 }
 
 .threat-intel-list {

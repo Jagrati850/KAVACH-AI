@@ -15,6 +15,13 @@ from app.database import Base
 
 
 class ReportType(str, enum.Enum):
+    CLEAN_AIR = "clean_air"
+    WATER_SANITATION = "water_sanitation"
+    ROADS_TRANSPORT = "roads_transport"
+    HEALTHCARE = "healthcare"
+    EDUCATION = "education"
+    DIGITAL_INFRA = "digital_infra"
+    ELECTRICITY_ENERGY = "electricity_energy"
     SCAM_CALL = "scam_call"
     PHISHING = "phishing"
     COUNTERFEIT_CURRENCY = "counterfeit_currency"
@@ -60,7 +67,14 @@ class Report(Base):
     severity: Mapped[Severity] = mapped_column(
         Enum(Severity), default=Severity.MEDIUM, nullable=False
     )
-    # Suspect / perpetrator info
+    # Infrastructure & Multi-channel fields
+    infra_category: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    channel: Mapped[str | None] = mapped_column(String(50), nullable=True, default="web")
+    language: Mapped[str | None] = mapped_column(String(20), nullable=True, default="en")
+    priority_score: Mapped[float | None] = mapped_column(Float, nullable=True, default=50.0)
+    affected_population: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Suspect / perpetrator or contact info
     suspect_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     suspect_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     suspect_account: Mapped[str | None] = mapped_column(String(255), nullable=True)
