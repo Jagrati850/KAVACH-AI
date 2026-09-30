@@ -2,7 +2,7 @@
    KAVACH AI — Dashboard Application Logic
    ═══════════════════════════════════════════════════════════════ */
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
+const API_BASE = 'https://kavach-ai-ce2b.onrender.com';
 
 let mapInstance = null;
 
