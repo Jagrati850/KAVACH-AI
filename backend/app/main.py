@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.config import get_settings
 from app.core.exceptions import KavachException
-from app.database import close_db, init_db
+from app.database import close_db, init_db, seed_demo_users_if_missing
 from app.api.v1.router import api_router
 
 settings = get_settings()
@@ -34,6 +34,10 @@ async def lifespan(app: FastAPI):
     # Initialize database
     await init_db()
     print("[OK] Database initialized")
+
+    # Seed required demo users if missing (idempotent for production/Render)
+    await seed_demo_users_if_missing()
+
     print("[OK] AI engines loaded")
     print(f"[READY] Server at http://{settings.host}:{settings.port}")
     print(f"[DOCS] API docs at http://{settings.host}:{settings.port}/docs")
