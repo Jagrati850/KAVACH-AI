@@ -3,9 +3,7 @@
    Backend Integration · JWT Auth · API Calls · UI Controllers
    ═══════════════════════════════════════════════════════════════ */
 
-const API_BASE = (window.location.port === '8000') ? window.location.origin : 'http://127.0.0.1:8000';
-
-// ── State ────────────────────────────────────────────────────
+const API_BASE = 'https://kavach-ai-ce2b.onrender.com';
 let authToken = localStorage.getItem('jwt_token') || null;
 let userRole = localStorage.getItem('user_role') || null;
 let userName = localStorage.getItem('user_name') || null;
